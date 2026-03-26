@@ -1,0 +1,34 @@
+# Java / Gradle
+api/build/
+api/.gradle/
+api/bin/
+*.class
+*.jar
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfvars
+infra/.terraform.lock.hcl
+
+# Web (SvelteKit)
+web/node_modules/
+web/.svelte-kit/
+web/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Flox
+.flox/run/
+.flox/cache/
+
+# Docker
+docker-compose.override.yml

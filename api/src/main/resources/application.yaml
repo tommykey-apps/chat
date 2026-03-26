@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: chat-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/chat}
+    username: ${DB_USERNAME:chat}
+    password: ${DB_PASSWORD:chat}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-1.amazonaws.com/placeholder}
+  threads:
+    virtual:
+      enabled: true
+
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION:ap-northeast-1}
+    sqs:
+      endpoint: ${SQS_ENDPOINT:}
+
+app:
+  s3:
+    bucket: ${S3_BUCKET:chat-uploads}
+  sqs:
+    queue-url: ${SQS_QUEUE_URL:}
+  cognito:
+    user-pool-id: ${COGNITO_USER_POOL_ID:}
+    client-id: ${COGNITO_CLIENT_ID:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
