@@ -34,14 +34,11 @@ awscli2.pkg-path = "awscli2"
 ##  ... run by _bash_ shell when you run 'flox activate'.
 ## -------------------------------------------------------------------
 [hook]
-# on-activate = '''
-#   # -> Set variables, create files and directories
-#   # -> Perform initialization steps, e.g. create a python venv
-#   # -> Useful environment variables:
-#   #      - FLOX_ENV_PROJECT=/home/user/example
-#   #      - FLOX_ENV=/home/user/example/.flox/run
-#   #      - FLOX_ENV_CACHE=/home/user/example/.flox/cache
-# '''
+on-activate = '''
+  if command -v docker &> /dev/null; then
+    docker compose -f "$FLOX_ENV_PROJECT/docker-compose.yaml" up -d --quiet-pull 2>/dev/null
+  fi
+'''
 
 
 ## Profile script ----------------------------------------------------
