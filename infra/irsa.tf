@@ -52,6 +52,8 @@ resource "aws_iam_policy" "chat_api_access" {
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+          "sqs:CreateQueue",
         ]
         Resource = aws_sqs_queue.chat_messages.arn
       },
