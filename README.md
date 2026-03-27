@@ -110,5 +110,5 @@ cd ~/dev/url-shortener/infra && terraform destroy
 
 ## WebSocket について
 
-CloudFront は WebSocket に対応してないので、WebSocket だけは ALB に直接繋いでる。
-REST API とフロントは CloudFront 経由、WebSocket は ALB 直接、という構成。
+CloudFront 経由で WebSocket (STOMP) を通している。
+`/ws` パスを ALB オリジンに振り分け、`Upgrade` / `Connection` ヘッダーを転送する設定。

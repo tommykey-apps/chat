@@ -90,6 +90,28 @@ resource "aws_cloudfront_distribution" "chat" {
     max_ttl     = 0
   }
 
+  # /ws WebSocket: ALB, no cache, forward all headers (Upgrade/Connection)
+  ordered_cache_behavior {
+    path_pattern           = "/ws"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "alb-api"
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
   # SPA fallback: 403/404 → /index.html
   custom_error_response {
     error_code            = 403
