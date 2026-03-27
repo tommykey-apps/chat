@@ -16,6 +16,7 @@ infra/.terraform.lock.hcl
 web/node_modules/
 web/.svelte-kit/
 web/build/
+web/.env*
 
 # IDE
 .idea/

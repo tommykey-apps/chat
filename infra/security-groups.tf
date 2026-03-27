@@ -1,3 +1,10 @@
+locals {
+  eks_security_group_ids = distinct(concat(
+    [data.aws_eks_cluster.existing.vpc_config[0].cluster_security_group_id],
+    data.aws_security_groups.eks_nodes.ids,
+  ))
+}
+
 resource "aws_security_group" "rds" {
   name        = "${var.project}-rds"
   description = "Security group for chat RDS instance"
@@ -8,7 +15,7 @@ resource "aws_security_group" "rds" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [data.aws_eks_cluster.existing.vpc_config[0].cluster_security_group_id]
+    security_groups = local.eks_security_group_ids
   }
 
   egress {
@@ -34,7 +41,7 @@ resource "aws_security_group" "redis" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [data.aws_eks_cluster.existing.vpc_config[0].cluster_security_group_id]
+    security_groups = local.eks_security_group_ids
   }
 
   egress {

@@ -36,3 +36,15 @@ data "aws_eks_cluster_auth" "existing" {
 }
 
 data "aws_caller_identity" "current" {}
+
+data "aws_security_groups" "eks_nodes" {
+  filter {
+    name   = "tag:aws:eks:cluster-name"
+    values = [var.eks_cluster_name]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.existing.id]
+  }
+}

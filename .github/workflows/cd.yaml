@@ -68,6 +68,9 @@ jobs:
       - uses: flox/install-flox-action@main
 
       - name: Build web
+        env:
+          VITE_COGNITO_USER_POOL_ID: ap-northeast-1_qPedGpbby
+          VITE_COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
         run: flox activate -- bash -c 'cd web && pnpm install --frozen-lockfile && pnpm build'
 
       - name: Deploy to S3
