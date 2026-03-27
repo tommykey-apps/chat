@@ -4,6 +4,8 @@
 
 ## 構成図
 
+> [docs/architecture.drawio](docs/architecture.drawio) を draw.io で開くと編集できる
+
 ```mermaid
 graph LR
     User([User]) --> CF[CloudFront]
@@ -14,6 +16,7 @@ graph LR
     EKS --> RDS[(RDS<br/>PostgreSQL)]
     EKS --> Redis[(ElastiCache<br/>Redis)]
     EKS --> SQS[SQS]
+    EKS --> ES[Elasticsearch Pod]
     EKS -->|presigned URL| S3Upload[S3<br/>ファイル]
     Cognito[Cognito] -.->|JWT認証| User
 ```
