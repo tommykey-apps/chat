@@ -2,6 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { signUp, confirmSignUp, login as cognitoLogin } from '$lib/auth';
 	import { setAuth } from '$lib/stores/auth.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import * as Card from '$lib/components/ui/card';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Alert from '$lib/components/ui/alert';
 
 	let mode = $state<'login' | 'signup' | 'confirm'>('login');
 	let email = $state('');
@@ -56,77 +61,62 @@
 </script>
 
 <div class="flex min-h-screen items-center justify-center px-4">
-	<div class="w-full max-w-sm">
-		<h1 class="mb-8 text-center text-2xl font-bold">
-			<span class="text-emerald-400">#</span> Chat
-		</h1>
+	<Card.Root class="w-full max-w-sm">
+		<Card.Header class="text-center">
+			<Card.Title class="text-2xl">
+				<span class="text-primary">#</span> Chat
+			</Card.Title>
+		</Card.Header>
+		<Card.Content>
+			{#if mode === 'confirm'}
+				<form onsubmit={(e) => { e.preventDefault(); handleConfirm(); }} class="flex flex-col gap-4">
+					<p class="text-sm text-muted-foreground">メールに届いた認証コードを入力してください</p>
+					<Input
+						type="text"
+						bind:value={confirmCode}
+						placeholder="認証コード"
+						required
+					/>
+					<Button type="submit" disabled={loading} class="w-full">
+						{loading ? '確認中...' : '確認'}
+					</Button>
+				</form>
+			{:else}
+				<Tabs.Root value={mode} onValueChange={(v) => { mode = v as 'login' | 'signup'; error = ''; }}>
+					<Tabs.List class="mb-6 w-full">
+						<Tabs.Trigger value="login" class="flex-1">ログイン</Tabs.Trigger>
+						<Tabs.Trigger value="signup" class="flex-1">サインアップ</Tabs.Trigger>
+					</Tabs.List>
+				</Tabs.Root>
 
-		{#if mode === 'confirm'}
-			<form onsubmit={(e) => { e.preventDefault(); handleConfirm(); }} class="flex flex-col gap-4">
-				<p class="text-sm text-zinc-400">メールに届いた認証コードを入力してください</p>
-				<input
-					type="text"
-					bind:value={confirmCode}
-					placeholder="認証コード"
-					required
-					class="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-50 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-				/>
-				<button
-					type="submit"
-					disabled={loading}
-					class="rounded-lg bg-emerald-600 py-3 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+				<form
+					onsubmit={(e) => { e.preventDefault(); mode === 'login' ? handleLogin() : handleSignUp(); }}
+					class="flex flex-col gap-4"
 				>
-					{loading ? '確認中...' : '確認'}
-				</button>
-			</form>
-		{:else}
-			<!-- Tab -->
-			<div class="mb-6 flex rounded-lg border border-zinc-800 p-1">
-				<button
-					onclick={() => { mode = 'login'; error = ''; }}
-					class="flex-1 rounded-md py-2 text-sm font-medium transition {mode === 'login' ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-500 hover:text-zinc-300'}"
-				>
-					ログイン
-				</button>
-				<button
-					onclick={() => { mode = 'signup'; error = ''; }}
-					class="flex-1 rounded-md py-2 text-sm font-medium transition {mode === 'signup' ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-500 hover:text-zinc-300'}"
-				>
-					サインアップ
-				</button>
-			</div>
+					<Input
+						type="email"
+						bind:value={email}
+						placeholder="メールアドレス"
+						required
+					/>
+					<Input
+						type="password"
+						bind:value={password}
+						placeholder="パスワード"
+						required
+						minlength={8}
+					/>
+					<Button type="submit" disabled={loading} class="w-full">
+						{loading ? '処理中...' : mode === 'login' ? 'ログイン' : 'サインアップ'}
+					</Button>
+				</form>
+			{/if}
 
-			<form
-				onsubmit={(e) => { e.preventDefault(); mode === 'login' ? handleLogin() : handleSignUp(); }}
-				class="flex flex-col gap-4"
-			>
-				<input
-					type="email"
-					bind:value={email}
-					placeholder="メールアドレス"
-					required
-					class="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-50 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-				/>
-				<input
-					type="password"
-					bind:value={password}
-					placeholder="パスワード"
-					required
-					minlength="8"
-					class="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-50 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-				/>
-				<button
-					type="submit"
-					disabled={loading}
-					class="rounded-lg bg-emerald-600 py-3 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-				>
-					{loading ? '処理中...' : mode === 'login' ? 'ログイン' : 'サインアップ'}
-				</button>
-			</form>
-		{/if}
-
-		{#if error}
-			<p class="mt-4 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-400">{error}</p>
-		{/if}
-	</div>
+			{#if error}
+				<Alert.Root variant="destructive" class="mt-4">
+					<Alert.Description>{error}</Alert.Description>
+				</Alert.Root>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 </div>

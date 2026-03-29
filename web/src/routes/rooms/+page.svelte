@@ -2,6 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { listRooms, createRoom, joinRoom, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Badge } from '$lib/components/ui/badge';
+	import * as Alert from '$lib/components/ui/alert';
 
 	let rooms = $state<Room[]>([]);
 	let showCreate = $state(false);
@@ -41,82 +47,63 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<!-- Header -->
-	<header class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-6">
+	<header class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-3 sm:px-6">
 		<div class="flex items-center gap-4">
-			<h1 class="text-lg font-bold"><span class="text-emerald-400">#</span> チャットルーム</h1>
-			<a href="/friends" class="text-sm text-zinc-500 hover:text-zinc-300">フレンド</a>
+			<h1 class="text-lg font-bold"><span class="text-primary">#</span> チャットルーム</h1>
+			<a href="/friends" class="text-sm text-muted-foreground hover:text-foreground">フレンド</a>
 		</div>
-		<button
-			onclick={() => (showCreate = !showCreate)}
-			class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-		>
-			新規作成
-		</button>
+		<Button onclick={() => (showCreate = !showCreate)}>新規作成</Button>
 	</header>
 
 	<main class="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6">
-		<!-- Create Form -->
-		{#if showCreate}
-			<div class="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+		<Dialog.Root bind:open={showCreate}>
+			<Dialog.Content>
+				<Dialog.Header>
+					<Dialog.Title>新規ルーム作成</Dialog.Title>
+				</Dialog.Header>
 				<form onsubmit={(e) => { e.preventDefault(); handleCreate(); }} class="flex flex-col gap-3">
-					<input
-						type="text"
-						bind:value={newName}
-						placeholder="ルーム名"
-						required
-						class="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-50 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-					/>
-					<input
-						type="text"
-						bind:value={newDesc}
-						placeholder="説明（任意）"
-						class="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-50 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-					/>
+					<Input bind:value={newName} placeholder="ルーム名" required />
+					<Input bind:value={newDesc} placeholder="説明（任意）" />
 					<div class="flex gap-2">
-						<button
-							type="submit"
-							disabled={loading}
-							class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-						>
+						<Button type="submit" disabled={loading}>
 							{loading ? '作成中...' : '作成'}
-						</button>
-						<button
-							type="button"
-							onclick={() => (showCreate = false)}
-							class="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
-						>
+						</Button>
+						<Button variant="ghost" type="button" onclick={() => (showCreate = false)}>
 							キャンセル
-						</button>
+						</Button>
 					</div>
 				</form>
 				{#if error}
-					<p class="mt-2 text-sm text-red-400">{error}</p>
+					<Alert.Root variant="destructive" class="mt-2">
+						<Alert.Description>{error}</Alert.Description>
+					</Alert.Root>
 				{/if}
-			</div>
-		{/if}
+			</Dialog.Content>
+		</Dialog.Root>
 
-		<!-- Room List -->
 		{#if rooms.length === 0}
-			<div class="rounded-lg border border-dashed border-zinc-700 p-8 text-center">
-				<p class="text-zinc-500">まだルームがありません。作成してみましょう</p>
-			</div>
+			<Card.Root class="border-dashed">
+				<Card.Content class="py-8 text-center">
+					<p class="text-muted-foreground">まだルームがありません。作成してみましょう</p>
+				</Card.Content>
+			</Card.Root>
 		{:else}
 			<div class="flex flex-col gap-3">
 				{#each rooms as room (room.id)}
-					<a
-						href="/rooms/{room.id}"
-						class="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4 transition hover:border-zinc-700 hover:bg-zinc-900/50"
-					>
-						<div class="flex items-center justify-between">
-							<h2 class="font-medium text-zinc-50">
-								<span class="text-emerald-400">#</span> {room.name}
-							</h2>
-							<span class="text-xs text-zinc-500">{room.memberCount} 人</span>
-						</div>
-						{#if room.description}
-							<p class="mt-1 text-sm text-zinc-400">{room.description}</p>
-						{/if}
+					<a href="/rooms/{room.id}" class="block">
+						<Card.Root class="transition hover:border-primary/30 hover:bg-card/80">
+							<Card.Content class="pt-4">
+								<div class="flex items-center justify-between">
+									<h2 class="font-medium">
+										<span class="text-primary">#</span> {room.name}
+									</h2>
+									<Badge variant="secondary">{room.memberCount} 人</Badge>
+								</div>
+								{#if room.description}
+									<p class="mt-1 text-sm text-muted-foreground">{room.description}</p>
+								{/if}
+							</Card.Content>
+						</Card.Root>
 					</a>
 				{/each}
 			</div>
