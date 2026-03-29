@@ -19,6 +19,10 @@
 	$effect(() => {
 		if (needsRedirect) goto('/login');
 	});
+
+	$effect(() => {
+		document.documentElement.classList.add('dark');
+	});
 </script>
 
 <svelte:head>
@@ -28,15 +32,15 @@
 </svelte:head>
 
 {#if auth.loading}
-	<div class="dark flex min-h-screen items-center justify-center bg-background text-foreground">
+	<div class="flex min-h-screen items-center justify-center bg-background text-foreground">
 		<p class="text-muted-foreground">Loading...</p>
 	</div>
 {:else if needsRedirect}
-	<div class="dark flex min-h-screen items-center justify-center bg-background text-foreground">
+	<div class="flex min-h-screen items-center justify-center bg-background text-foreground">
 		<p class="text-muted-foreground">Redirecting...</p>
 	</div>
 {:else}
-	<div class="dark min-h-screen bg-background text-foreground">
+	<div class="min-h-screen bg-background text-foreground">
 		{@render children()}
 	</div>
 {/if}

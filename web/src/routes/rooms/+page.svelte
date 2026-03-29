@@ -92,7 +92,7 @@
 				{#each rooms as room (room.id)}
 					<a href="/rooms/{room.id}" class="block">
 						<Card.Root class="transition hover:border-primary/30 hover:bg-card/80">
-							<Card.Content class="pt-4">
+							<Card.Content class="py-4">
 								<div class="flex items-center justify-between">
 									<h2 class="font-medium">
 										<span class="text-primary">#</span> {room.name}
