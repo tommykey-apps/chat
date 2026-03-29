@@ -69,3 +69,37 @@ export const getUploadUrl = (roomId: string, fileName: string, contentType: stri
 
 export const getDownloadUrl = (s3Key: string) =>
 	request<{ downloadUrl: string }>('GET', `/api/files/presign-download/${s3Key}`);
+
+// Users
+export interface UserInfo {
+	id: string;
+	email: string;
+	displayName: string;
+	createdAt: string;
+}
+
+export const getMe = () => request<UserInfo>('GET', '/api/users/me');
+
+export const searchUsers = (q: string) =>
+	request<UserInfo[]>('GET', `/api/users/search?q=${encodeURIComponent(q)}`);
+
+// Friends
+export interface FriendRequest {
+	userId: string;
+	email: string;
+	displayName: string;
+	createdAt: string;
+}
+
+export const listFriends = () => request<UserInfo[]>('GET', '/api/friends');
+
+export const listFriendRequests = () => request<FriendRequest[]>('GET', '/api/friends/requests');
+
+export const sendFriendRequest = (userId: string) =>
+	request<void>('POST', `/api/friends/${userId}/request`);
+
+export const acceptFriendRequest = (userId: string) =>
+	request<void>('POST', `/api/friends/${userId}/accept`);
+
+export const removeFriend = (userId: string) =>
+	request<void>('DELETE', `/api/friends/${userId}`);

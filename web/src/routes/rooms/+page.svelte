@@ -43,7 +43,10 @@
 <div class="flex min-h-screen flex-col">
 	<!-- Header -->
 	<header class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-6">
-		<h1 class="text-lg font-bold"><span class="text-emerald-400">#</span> チャットルーム</h1>
+		<div class="flex items-center gap-4">
+			<h1 class="text-lg font-bold"><span class="text-emerald-400">#</span> チャットルーム</h1>
+			<a href="/friends" class="text-sm text-zinc-500 hover:text-zinc-300">フレンド</a>
+		</div>
 		<button
 			onclick={() => (showCreate = !showCreate)}
 			class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
