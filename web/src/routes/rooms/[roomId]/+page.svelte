@@ -120,7 +120,7 @@
 	});
 </script>
 
-<div class="flex h-screen flex-col">
+<div class="flex h-screen flex-col overflow-hidden">
 	<!-- Header -->
 	<header class="flex shrink-0 items-center justify-between border-b border-border bg-background px-4 py-3 sm:px-6">
 		<div class="flex items-center gap-3">
