@@ -29,6 +29,10 @@ export function clearAuth() {
 }
 
 export async function initAuth() {
+	if (import.meta.env.DEV) {
+		setAuth({ sub: 'dev-user', email: 'dev@local' }, 'dev-token');
+		return;
+	}
 	try {
 		const session = await getSession();
 		if (session) {

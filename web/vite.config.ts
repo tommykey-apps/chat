@@ -3,6 +3,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	define: {
+		global: 'globalThis'
+	},
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
 		proxy: {
