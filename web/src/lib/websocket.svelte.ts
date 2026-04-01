@@ -5,9 +5,9 @@ let client: Client | null = null;
 let connected = $state(false);
 let onConnectCallbacks: Array<() => void> = [];
 
-export function getConnected() {
+export function getWsState() {
 	return {
-		get value() { return connected; }
+		get connected() { return connected; }
 	};
 }
 

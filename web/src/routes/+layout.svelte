@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { initAuth, getAuthState } from '$lib/stores/auth.svelte';
-	import { connect, subscribe, disconnect } from '$lib/websocket';
+	import { connect, subscribe, disconnect } from '$lib/websocket.svelte';
 	import { handleNotification, loadUnreadCounts, type NotificationPayload } from '$lib/stores/notifications.svelte';
 	import { initPushNotifications } from '$lib/push';
 	import Toast from '$lib/components/Toast.svelte';

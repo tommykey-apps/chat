@@ -3,7 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, searchMessages, type Message, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
-	import { subscribe, send, getConnected } from '$lib/websocket';
+	import { untrack } from 'svelte';
+	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
 	import { setCurrentRoom, clearUnread } from '$lib/stores/notifications.svelte';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Attachment01Icon, Image01Icon, SentIcon } from '@hugeicons/core-free-icons';
@@ -21,7 +22,7 @@
 
 	const roomId = $derived(page.params.roomId);
 	const auth = getAuthState();
-	const ws = getConnected();
+	const ws = getWsState();
 
 	async function loadRoom() {
 		try {
@@ -113,16 +114,18 @@
 
 	$effect(() => {
 		if (auth.isAuthenticated && roomId) {
-			loadRoom();
-			setCurrentRoom(roomId);
-			clearUnread(roomId);
+			untrack(() => {
+				loadRoom();
+				setCurrentRoom(roomId);
+				clearUnread(roomId);
+			});
 		}
 		return () => setCurrentRoom(null);
 	});
 
 	$effect(() => {
-		if (ws.value && roomId) {
-			const sub = subscribeToRoom();
+		if (ws.connected && roomId) {
+			const sub = untrack(() => subscribeToRoom());
 			return () => sub?.unsubscribe();
 		}
 	});
