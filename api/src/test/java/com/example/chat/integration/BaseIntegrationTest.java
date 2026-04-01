@@ -54,6 +54,12 @@ public abstract class BaseIntegrationTest {
     @MockitoBean
     protected ChatMessageSearchRepository chatMessageSearchRepository;
 
+    @MockitoBean
+    protected software.amazon.awssdk.services.s3.presigner.S3Presigner s3Presigner;
+
+    @MockitoBean
+    protected software.amazon.awssdk.services.s3.S3Client s3Client;
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
