@@ -41,9 +41,14 @@ app:
     bucket: ${S3_BUCKET:chat-uploads}
   sqs:
     queue-url: ${SQS_QUEUE_URL:}
+    chat-message-queue: ${SQS_CHAT_MESSAGE_QUEUE:chat-messages}
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
     client-id: ${COGNITO_CLIENT_ID:}
+  webpush:
+    vapid-public-key: ${VAPID_PUBLIC_KEY:}
+    vapid-private-key: ${VAPID_PRIVATE_KEY:}
+    vapid-subject: ${VAPID_SUBJECT:mailto:admin@example.com}
 
 management:
   endpoints:

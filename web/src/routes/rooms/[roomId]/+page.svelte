@@ -3,7 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, searchMessages, type Message, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
-	import { connect, subscribe, send, disconnect, isConnected } from '$lib/websocket';
+	import { subscribe, send, getConnected } from '$lib/websocket';
+	import { setCurrentRoom, clearUnread } from '$lib/stores/notifications.svelte';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Attachment01Icon, Image01Icon, SentIcon } from '@hugeicons/core-free-icons';
 
@@ -20,6 +21,7 @@
 
 	const roomId = $derived(page.params.roomId);
 	const auth = getAuthState();
+	const ws = getConnected();
 
 	async function loadRoom() {
 		try {
@@ -37,14 +39,12 @@
 		setTimeout(() => messagesEnd?.scrollIntoView({ behavior: 'smooth' }), 50);
 	}
 
-	function connectWebSocket() {
-		connect(() => {
-			subscribe(`/topic/room.${roomId}`, (msg) => {
-				const message: Message = JSON.parse(msg.body);
-				messages = [...messages, message];
-				resolveImageUrl(message);
-				scrollToBottom();
-			});
+	function subscribeToRoom() {
+		return subscribe(`/topic/room.${roomId}`, (msg) => {
+			const message: Message = JSON.parse(msg.body);
+			messages = [...messages, message];
+			resolveImageUrl(message);
+			scrollToBottom();
 		});
 	}
 
@@ -114,9 +114,17 @@
 	$effect(() => {
 		if (auth.isAuthenticated && roomId) {
 			loadRoom();
-			connectWebSocket();
+			setCurrentRoom(roomId);
+			clearUnread(roomId);
 		}
-		return () => disconnect();
+		return () => setCurrentRoom(null);
+	});
+
+	$effect(() => {
+		if (ws.value && roomId) {
+			const sub = subscribeToRoom();
+			return () => sub?.unsubscribe();
+		}
 	});
 </script>
 
