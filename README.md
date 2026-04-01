@@ -20,6 +20,8 @@
 | キュー | SQS |
 | 検索 | Elasticsearch (自前ホスト、EKS Pod) |
 | リアルタイム | WebSocket (STOMP) — CloudFront経由 |
+| 通知 | Web Push (VAPID) + アプリ内トースト + 未読バッジ |
+| テスト | JUnit 5 + Mockito + Testcontainers / Vitest / Playwright |
 | IaC | Terraform (S3バックエンド + DynamoDB state lock) |
 | CI/CD | GitHub Actions + flox (Terraform apply + Docker build 自動化) |
 | 配信 | CloudFront (S3 + ALB を同一ドメインで配信) |
@@ -32,9 +34,9 @@
 | EC2 | EKSのワーカーノード (t3.medium) |
 | ECR | Docker イメージ置き場 |
 | RDS (PostgreSQL) | チャットルーム、メッセージ、メンバー、ユーザー、フレンドシップの保存 |
-| ElastiCache (Redis) | オンライン状態の管理、WebSocket セッション |
+| ElastiCache (Redis) | オンライン状態の管理、未読カウント |
 | Cognito | ユーザー登録、ログイン、JWT 発行 |
-| SQS | メッセージの非同期処理キュー |
+| SQS | メッセージ送信時の通知処理キュー (DLQ付き) |
 | S3 | フロントの配信 + チャットで送るファイルの保存 + Terraform state |
 | CloudFront | フロント + REST API + WebSocket の HTTPS 配信 |
 | ALB | リクエスト振り分け + WebSocket 接続 |
@@ -50,6 +52,9 @@
 - 画像・ファイルのアップロード（S3 presigned URL）
 - Elasticsearch による全文検索
 - フレンド機能（ユーザー検索、申請、承認、DM開始）
+- アプリ内通知（トースト + 未読バッジ、STOMP `/user/queue/notifications`）
+- ブラウザ Push 通知（Web Push API + VAPID + Service Worker）
+- SQS による非同期通知パイプライン（ローカル開発は Spring Event fallback）
 
 ## ディレクトリ構成
 
@@ -83,6 +88,11 @@ chat/
 | POST | `/api/friends/{id}/request` | フレンド申請 |
 | POST | `/api/friends/{id}/accept` | 申請承認 |
 | DELETE | `/api/friends/{id}` | フレンド削除 |
+| GET | `/api/notifications/unread` | 未読カウント取得 |
+| DELETE | `/api/notifications/unread/{roomId}` | 未読クリア |
+| GET | `/api/push/vapid-key` | VAPID 公開鍵取得 |
+| POST | `/api/push/subscribe` | Push 通知購読登録 |
+| DELETE | `/api/push/unsubscribe` | Push 通知購読解除 |
 | WebSocket | `/ws` | STOMP でリアルタイムメッセージ |
 
 ## ローカルで動かす
@@ -95,7 +105,8 @@ cd api && gradle bootRun --args='--spring.profiles.active=local' &
 cd web && pnpm install && pnpm dev
 ```
 
-フロントは DEV モードで Cognito 認証をスキップするので、ログインなしでUI確認できる。
+フロントは DEV モードで Cognito 認証をスキップし、`dev-user` として自動ログインする。
+API は `local` プロファイルで `LocalSecurityConfig` が有効になり、`dev-token` を受け付ける。
 Vite のプロキシで `/api/*` と `/ws` が Spring Boot に流れる。
 
 ## デプロイ
@@ -109,6 +120,21 @@ cd ~/dev/chat/infra && terraform apply
 ```bash
 cd ~/dev/chat/infra && terraform destroy
 ```
+
+## テスト
+
+```bash
+cd api && gradle test              # Backend ユニット + 結合テスト (Testcontainers)
+cd web && pnpm test                # Frontend ユニットテスト (Vitest)
+cd web && pnpm test:e2e            # E2E テスト (Playwright)
+```
+
+| カテゴリ | テスト数 | ツール |
+|---------|---------|-------|
+| Backend ユニット | 62 | JUnit 5 + Mockito |
+| Backend 結合 | 24 | Testcontainers (PostgreSQL + Redis) |
+| Frontend ユニット | 33 | Vitest |
+| Frontend E2E | 7 | Playwright |
 
 ## WebSocket について
 
