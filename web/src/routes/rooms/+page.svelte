@@ -8,7 +8,9 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Alert from '$lib/components/ui/alert';
+	import { getNotificationState } from '$lib/stores/notifications.svelte';
 
+	const notifications = getNotificationState();
 	let rooms = $state<Room[]>([]);
 	let showCreate = $state(false);
 	let newName = $state('');
@@ -97,7 +99,12 @@
 									<h2 class="font-medium">
 										<span class="text-primary">#</span> {room.name}
 									</h2>
-									<Badge variant="secondary">{room.memberCount} 人</Badge>
+									<div class="flex items-center gap-2">
+										{#if notifications.unreadCounts[room.id]}
+											<Badge variant="destructive">{notifications.unreadCounts[room.id]}</Badge>
+										{/if}
+										<Badge variant="secondary">{room.memberCount} 人</Badge>
+									</div>
 								</div>
 								{#if room.description}
 									<p class="mt-1 text-sm text-muted-foreground">{room.description}</p>
