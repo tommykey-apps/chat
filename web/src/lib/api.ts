@@ -103,3 +103,20 @@ export const acceptFriendRequest = (userId: string) =>
 
 export const removeFriend = (userId: string) =>
 	request<void>('DELETE', `/api/friends/${userId}`);
+
+// Notifications
+export const getUnreadCounts = () =>
+	request<Record<string, number>>('GET', '/api/notifications/unread');
+
+export const clearUnreadCount = (roomId: string) =>
+	request<void>('DELETE', `/api/notifications/unread/${roomId}`);
+
+// Push
+export const getVapidKey = () =>
+	request<{ publicKey: string }>('GET', '/api/push/vapid-key');
+
+export const subscribePush = (endpoint: string, p256dh: string, auth: string) =>
+	request<void>('POST', '/api/push/subscribe', { endpoint, p256dh, auth });
+
+export const unsubscribePush = (endpoint: string) =>
+	request<void>('DELETE', '/api/push/unsubscribe', { endpoint });

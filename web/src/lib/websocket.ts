@@ -1,9 +1,24 @@
-import { Client, type IMessage } from '@stomp/stompjs';
+import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
 import { getAuthState } from '$lib/stores/auth.svelte';
 
 let client: Client | null = null;
+let connected = $state(false);
+let onConnectCallbacks: Array<() => void> = [];
+
+export function getConnected() {
+	return {
+		get value() { return connected; }
+	};
+}
 
 export function connect(onConnect?: () => void) {
+	if (onConnect) onConnectCallbacks.push(onConnect);
+	if (client?.connected) {
+		onConnect?.();
+		return;
+	}
+	if (client?.active) return;
+
 	const auth = getAuthState();
 	const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 	const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -17,7 +32,11 @@ export function connect(onConnect?: () => void) {
 		heartbeatIncoming: 10000,
 		heartbeatOutgoing: 10000,
 		onConnect: () => {
-			onConnect?.();
+			connected = true;
+			onConnectCallbacks.forEach((cb) => cb());
+		},
+		onDisconnect: () => {
+			connected = false;
 		},
 		onStompError: (frame) => {
 			console.error('STOMP error:', frame.headers['message']);
@@ -27,7 +46,7 @@ export function connect(onConnect?: () => void) {
 	client.activate();
 }
 
-export function subscribe(destination: string, callback: (msg: IMessage) => void) {
+export function subscribe(destination: string, callback: (msg: IMessage) => void): StompSubscription | null {
 	if (!client?.connected) return null;
 	return client.subscribe(destination, callback);
 }
@@ -41,6 +60,8 @@ export function disconnect() {
 	if (client) {
 		client.deactivate();
 		client = null;
+		connected = false;
+		onConnectCallbacks = [];
 	}
 }
 

@@ -15,10 +15,13 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final SearchService searchService;
+    private final SqsNotificationService sqsNotificationService;
 
-    public ChatService(ChatMessageRepository chatMessageRepository, SearchService searchService) {
+    public ChatService(ChatMessageRepository chatMessageRepository, SearchService searchService,
+                       SqsNotificationService sqsNotificationService) {
         this.chatMessageRepository = chatMessageRepository;
         this.searchService = searchService;
+        this.sqsNotificationService = sqsNotificationService;
     }
 
     @Transactional
@@ -35,6 +38,11 @@ public class ChatService {
             searchService.indexMessage(saved);
         } catch (Exception e) {
             // ES障害時もメッセージ送信は成功させる
+        }
+        try {
+            sqsNotificationService.sendNotification(saved);
+        } catch (Exception e) {
+            // SQS障害時もメッセージ送信は成功させる
         }
         return saved;
     }
