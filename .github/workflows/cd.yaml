@@ -67,14 +67,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: flox/install-flox-action@main
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Build web
         env:
           VITE_COGNITO_USER_POOL_ID: ap-northeast-1_qPedGpbby
           VITE_COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
-        run: flox activate -- bash -c 'cd web && pnpm install --frozen-lockfile && pnpm build'
+        run: cd web && pnpm install --frozen-lockfile && pnpm build
 
       - name: Deploy to S3
         run: aws s3 sync web/build/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
