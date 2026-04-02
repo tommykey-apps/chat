@@ -25,6 +25,7 @@ graph TB
                 subgraph EKS Cluster
                     API[Spring Boot<br/>chat-api Pod]
                     ES[Elasticsearch<br/>Pod]
+                    ImageUpdater[ArgoCD<br/>Image Updater]
                 end
                 RDS[(RDS<br/>PostgreSQL)]
                 Redis[(ElastiCache<br/>Redis)]
@@ -44,6 +45,8 @@ graph TB
     API -->|Presigned URL| S3Upload
     API --> ES
     ECR -.->|Image Pull| API
+    ImageUpdater -->|Digest監視| ECR
+    ImageUpdater -->|Sync| API
     API -.->|IRSA| SQS
     API -.->|IRSA| S3Upload
 
@@ -58,4 +61,4 @@ graph TB
     class S3Front,S3Upload,ECR storage
     class RDS,Redis,ES database
     class Cognito security
-    class API network
+    class API,ImageUpdater network
