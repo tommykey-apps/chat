@@ -128,6 +128,19 @@ public class RoomService {
         roomMemberRepository.deleteByRoomIdAndUserId(roomId, userId);
     }
 
+    @Transactional
+    public void deleteRoom(UUID roomId, String userId) {
+        var room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Room not found: " + roomId));
+        if (!room.getCreatedBy().equals(userId)) {
+            throw new IllegalStateException("Only the room owner can delete a room");
+        }
+        chatMessageRepository.deleteByRoomId(roomId);
+        roomMemberRepository.findByRoomId(roomId).forEach(m ->
+                roomMemberRepository.deleteByRoomIdAndUserId(roomId, m.getUserId()));
+        chatRoomRepository.delete(room);
+    }
+
     private RoomResponse toResponse(ChatRoom room, int memberCount) {
         var lastMsg = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getId());
         return new RoomResponse(

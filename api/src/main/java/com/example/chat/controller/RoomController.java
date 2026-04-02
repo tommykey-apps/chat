@@ -62,6 +62,12 @@ public class RoomController {
         roomService.leaveRoom(roomId, principal.getName());
     }
 
+    @DeleteMapping("/{roomId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRoom(@PathVariable UUID roomId, Principal principal) {
+        roomService.deleteRoom(roomId, principal.getName());
+    }
+
     @GetMapping("/{roomId}/messages")
     public Page<MessageResponse> getMessages(@PathVariable UUID roomId,
                                              @RequestParam(defaultValue = "0") int page,

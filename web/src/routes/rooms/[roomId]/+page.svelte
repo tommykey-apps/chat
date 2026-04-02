@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, searchMessages, type Message, type Room } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, type Message, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -97,6 +97,16 @@
 		goto('/rooms');
 	}
 
+	async function handleDelete() {
+		if (!confirm('このルームを削除しますか？メッセージも全て削除されます。')) return;
+		try {
+			await deleteRoom(roomId);
+			goto('/rooms');
+		} catch {
+			// not owner or error
+		}
+	}
+
 	async function resolveImageUrl(msg: Message) {
 		if (msg.messageType === 'IMAGE' && !imageUrls[msg.id]) {
 			try {
@@ -171,6 +181,14 @@
 			>
 				退出
 			</button>
+			{#if room?.createdBy === auth.user?.sub}
+				<button
+					onclick={handleDelete}
+					class="rounded px-3 py-1 text-xs text-muted-foreground hover:bg-red-950 hover:text-red-400"
+				>
+					削除
+				</button>
+			{/if}
 		</div>
 	</header>
 

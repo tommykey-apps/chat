@@ -57,6 +57,9 @@ export const getRoom = (roomId: string) =>
 export const joinRoom = (roomId: string) =>
 	request<void>('POST', `/api/rooms/${roomId}/join`);
 
+export const deleteRoom = (roomId: string) =>
+	request<void>('DELETE', `/api/rooms/${roomId}`);
+
 export const leaveRoom = (roomId: string) =>
 	request<void>('DELETE', `/api/rooms/${roomId}/leave`);
 
