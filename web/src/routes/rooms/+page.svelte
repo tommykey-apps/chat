@@ -53,6 +53,7 @@
 		<div class="flex items-center gap-4">
 			<h1 class="text-lg font-bold"><span class="text-primary">#</span> チャットルーム</h1>
 			<a href="/friends" class="text-sm text-muted-foreground hover:text-foreground">フレンド</a>
+				<a href="/profile" class="text-sm text-muted-foreground hover:text-foreground">プロフィール</a>
 		</div>
 		<div class="flex items-center gap-2">
 			<Button onclick={() => (showCreate = !showCreate)}>新規作成</Button>
