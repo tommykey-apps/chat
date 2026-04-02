@@ -49,19 +49,19 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<header class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-3 sm:px-6">
-		<div class="flex items-center gap-4">
-			<h1 class="text-lg font-bold"><span class="text-primary">#</span> チャットルーム</h1>
-			<a href="/friends" class="text-sm text-muted-foreground hover:text-foreground">フレンド</a>
-				<a href="/profile" class="text-sm text-muted-foreground hover:text-foreground">プロフィール</a>
+	<header class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-3 py-3 sm:px-6">
+		<div class="flex items-center gap-2 sm:gap-4">
+			<h1 class="text-base font-bold sm:text-lg"><span class="text-primary">#</span> <span class="hidden sm:inline">チャット</span>ルーム</h1>
+			<a href="/friends" class="text-xs text-muted-foreground hover:text-foreground sm:text-sm">フレンド</a>
+			<a href="/profile" class="text-xs text-muted-foreground hover:text-foreground sm:text-sm">設定</a>
 		</div>
-		<div class="flex items-center gap-2">
-			<Button onclick={() => (showCreate = !showCreate)}>新規作成</Button>
+		<div class="flex items-center gap-1 sm:gap-2">
+			<Button size="sm" onclick={() => (showCreate = !showCreate)}>+</Button>
 			<button
 				onclick={() => { logout(); goto('/login'); }}
-				class="rounded px-3 py-1 text-xs text-muted-foreground hover:bg-red-950 hover:text-red-400"
+				class="rounded px-2 py-1 text-[10px] text-muted-foreground hover:bg-red-950 hover:text-red-400 sm:text-xs sm:px-3"
 			>
-				ログアウト
+				logout
 			</button>
 		</div>
 	</header>
