@@ -4,14 +4,14 @@ export async function initPushNotifications(): Promise<void> {
 	if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
 	try {
+		const { publicKey } = await getVapidKey();
+		if (!publicKey) return;
+
 		const registration = await navigator.serviceWorker.register('/sw.js');
 		await navigator.serviceWorker.ready;
 
 		const existing = await registration.pushManager.getSubscription();
 		if (existing) return;
-
-		const { publicKey } = await getVapidKey();
-		if (!publicKey) return;
 
 		const applicationServerKey = urlBase64ToUint8Array(publicKey);
 		const subscription = await registration.pushManager.subscribe({
@@ -23,8 +23,8 @@ export async function initPushNotifications(): Promise<void> {
 		if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
 			await subscribePush(json.endpoint, json.keys.p256dh, json.keys.auth);
 		}
-	} catch (e) {
-		console.error('Push notification setup failed:', e);
+	} catch {
+		// Push notifications unavailable — silent fallback
 	}
 }
 
