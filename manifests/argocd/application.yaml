@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: chat
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: chat-api=831963379503.dkr.ecr.ap-northeast-1.amazonaws.com/chat-api
+    argocd-image-updater.argoproj.io/chat-api.update-strategy: digest
+    argocd-image-updater.argoproj.io/chat-api.allow-tags: "regexp:^prod$"
 spec:
   project: default
   source:

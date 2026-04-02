@@ -13,9 +13,6 @@ env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: chat-api
 
-permissions:
-  contents: write
-
 jobs:
   deploy-infra:
     runs-on: ubuntu-latest
@@ -56,24 +53,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           cd api
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
-
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: flox/install-flox-action@main
-
-      - name: Update manifest image tag
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-        run: flox activate -- bash -c 'cd manifests/base && kustomize edit set image chat-api=$ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA'
-
-      - name: Commit and push manifest update
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifests/base/kustomization.yaml
-          git commit -m "deploy: update chat-api image to $GITHUB_SHA"
-          git push
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:prod .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:prod
 
   deploy-web:
     runs-on: ubuntu-latest
