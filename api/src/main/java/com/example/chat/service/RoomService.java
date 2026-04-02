@@ -3,6 +3,8 @@ package com.example.chat.service;
 import com.example.chat.model.dto.RoomResponse;
 import com.example.chat.model.entity.ChatRoom;
 import com.example.chat.model.entity.RoomMember;
+import com.example.chat.model.entity.ChatMessage;
+import com.example.chat.repository.ChatMessageRepository;
 import com.example.chat.repository.ChatRoomRepository;
 import com.example.chat.repository.RoomMemberRepository;
 import com.example.chat.repository.UserRepository;
@@ -18,17 +20,20 @@ import java.util.UUID;
 public class RoomService {
 
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final UserRepository userRepository;
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
     public RoomService(ChatRoomRepository chatRoomRepository,
+                       ChatMessageRepository chatMessageRepository,
                        RoomMemberRepository roomMemberRepository,
                        UserRepository userRepository,
                        ChatService chatService,
                        SimpMessagingTemplate messagingTemplate) {
         this.chatRoomRepository = chatRoomRepository;
+        this.chatMessageRepository = chatMessageRepository;
         this.roomMemberRepository = roomMemberRepository;
         this.userRepository = userRepository;
         this.chatService = chatService;
@@ -124,13 +129,16 @@ public class RoomService {
     }
 
     private RoomResponse toResponse(ChatRoom room, int memberCount) {
+        var lastMsg = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getId());
         return new RoomResponse(
                 room.getId(),
                 room.getName(),
                 room.getDescription(),
                 room.getCreatedBy(),
                 room.getCreatedAt(),
-                memberCount
+                memberCount,
+                lastMsg.map(ChatMessage::getContent).orElse(null),
+                lastMsg.map(ChatMessage::getCreatedAt).orElse(null)
         );
     }
 }

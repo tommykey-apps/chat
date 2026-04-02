@@ -115,8 +115,10 @@
 										<Badge variant="secondary">{room.memberCount} 人</Badge>
 									</div>
 								</div>
-								{#if room.description}
-									<p class="mt-1 text-sm text-muted-foreground">{room.description}</p>
+								{#if room.lastMessage}
+									<p class="mt-1 truncate text-sm text-muted-foreground">{room.lastMessage}</p>
+								{:else if room.description}
+									<p class="mt-1 text-sm text-muted-foreground/50">{room.description}</p>
 								{/if}
 							</Card.Content>
 						</Card.Root>
