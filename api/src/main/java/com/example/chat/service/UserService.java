@@ -31,6 +31,13 @@ public class UserService {
         return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    @Transactional
+    public User updateDisplayName(String id, String displayName) {
+        var user = getUser(id);
+        user.setDisplayName(displayName);
+        return userRepository.save(user);
+    }
+
     public List<User> searchUsers(String query) {
         return userRepository.findByEmailContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(query, query);
     }

@@ -23,6 +23,15 @@ public class UserController {
         return userService.getUser(principal.getName());
     }
 
+    @PatchMapping("/me")
+    public User updateProfile(@RequestBody Map<String, String> body, Principal principal) {
+        String displayName = body.get("displayName");
+        if (displayName == null || displayName.isBlank()) {
+            throw new IllegalArgumentException("displayName is required");
+        }
+        return userService.updateDisplayName(principal.getName(), displayName.trim());
+    }
+
     @GetMapping("/search")
     public List<User> search(@RequestParam String q) {
         return userService.searchUsers(q);

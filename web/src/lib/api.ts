@@ -80,6 +80,9 @@ export interface UserInfo {
 
 export const getMe = () => request<UserInfo>('GET', '/api/users/me');
 
+export const updateProfile = (displayName: string) =>
+	request<UserInfo>('PATCH', '/api/users/me', { displayName });
+
 export const searchUsers = (q: string) =>
 	request<UserInfo[]>('GET', `/api/users/search?q=${encodeURIComponent(q)}`);
 
