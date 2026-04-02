@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, type Message, type Room } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, type Message, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -24,6 +24,7 @@
 	let loadingMore = $state(false);
 	let messagesContainer: HTMLDivElement;
 	let typingUsers = $state<Record<string, string>>({});
+	let readStatus = $state<Record<string, string>>({});
 	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 	let lastTypingSent = 0;
 
@@ -40,6 +41,10 @@
 			messages = res.content.reverse();
 			messages.forEach(resolveImageUrl);
 			scrollToBottom();
+			try { readStatus = await getReadStatus(roomId); } catch {}
+			if (messages.length > 0) {
+				send(`/app/read/${roomId}`, { messageId: messages[messages.length - 1].id });
+			}
 		} catch {
 			goto('/rooms');
 		}
@@ -79,12 +84,18 @@
 	}
 
 	function subscribeToRoom() {
-		return subscribe(`/topic/room.${roomId}`, (msg) => {
+		const sub = subscribe(`/topic/room.${roomId}`, (msg) => {
 			const message: Message = JSON.parse(msg.body);
 			messages = [...messages, message];
 			resolveImageUrl(message);
 			scrollToBottom();
+			send(`/app/read/${roomId}`, { messageId: message.id });
 		});
+		const readSub = subscribe(`/topic/room.${roomId}.read`, (msg) => {
+			const data = JSON.parse(msg.body);
+			readStatus = { ...readStatus, [data.userId]: data.messageId };
+		});
+		return { unsubscribe: () => { sub?.unsubscribe(); readSub?.unsubscribe(); } };
 	}
 
 	function subscribeToTyping() {
@@ -325,6 +336,9 @@
 				</div>
 				<div class="mt-0.5 text-[10px] text-muted-foreground/60">
 					{new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+					{#if isOwnMessage(msg) && Object.entries(readStatus).some(([uid, mid]) => uid !== auth.user?.sub && mid >= msg.id)}
+						<span class="ml-1 text-primary/60">既読</span>
+					{/if}
 				</div>
 			</div>
 		{/each}

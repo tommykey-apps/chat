@@ -123,6 +123,12 @@ public class RoomService {
                         systemMessage.getCreatedAt()));
     }
 
+    public List<String> getRoomMembers(UUID roomId) {
+        return roomMemberRepository.findByRoomId(roomId).stream()
+                .map(m -> m.getUserId())
+                .toList();
+    }
+
     @Transactional
     public void leaveRoom(UUID roomId, String userId) {
         roomMemberRepository.deleteByRoomIdAndUserId(roomId, userId);
