@@ -45,8 +45,8 @@ data "aws_lb" "chat" {
 
 data "aws_security_groups" "eks_nodes" {
   filter {
-    name   = "tag:aws:eks:cluster-name"
-    values = [var.eks_cluster_name]
+    name   = "tag:kubernetes.io/cluster/${var.eks_cluster_name}"
+    values = ["owned"]
   }
 
   filter {
