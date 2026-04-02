@@ -9,6 +9,8 @@ public record RoomResponse(
         String description,
         String createdBy,
         Instant createdAt,
-        int memberCount
+        int memberCount,
+        String lastMessage,
+        Instant lastMessageAt
 ) {
 }

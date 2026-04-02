@@ -25,6 +25,8 @@ export interface Room {
 	createdBy: string;
 	createdAt: string;
 	memberCount: number;
+	lastMessage: string | null;
+	lastMessageAt: string | null;
 }
 
 export interface Message {
