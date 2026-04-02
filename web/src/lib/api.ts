@@ -86,6 +86,19 @@ export interface UserInfo {
 export const getReadStatus = (roomId: string) =>
 	request<Record<string, string>>('GET', `/api/rooms/${roomId}/read-status`);
 
+// Reactions
+export interface ReactionGroup {
+	emoji: string;
+	count: number;
+	userIds: string[];
+}
+
+export const addReaction = (messageId: string, emoji: string) =>
+	request<void>('POST', `/api/messages/${messageId}/reactions`, { emoji });
+
+export const removeReaction = (messageId: string, emoji: string) =>
+	request<void>('DELETE', `/api/messages/${messageId}/reactions/${emoji}`);
+
 export const getMe = () => request<UserInfo>('GET', '/api/users/me');
 
 export const updateProfile = (displayName: string) =>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, type Message, type Room } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, addReaction, removeReaction, type Message, type Room, type ReactionGroup } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -25,6 +25,8 @@
 	let messagesContainer: HTMLDivElement;
 	let typingUsers = $state<Record<string, string>>({});
 	let readStatus = $state<Record<string, string>>({});
+	let reactions = $state<Record<string, ReactionGroup[]>>({});
+	const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 	let lastTypingSent = 0;
 
@@ -95,7 +97,23 @@
 			const data = JSON.parse(msg.body);
 			readStatus = { ...readStatus, [data.userId]: data.messageId };
 		});
-		return { unsubscribe: () => { sub?.unsubscribe(); readSub?.unsubscribe(); } };
+		const reactionSub = subscribe(`/topic/room.${roomId}.reactions`, (msg) => {
+			const data = JSON.parse(msg.body);
+			reactions = { ...reactions, [data.messageId]: data.reactions };
+		});
+		return { unsubscribe: () => { sub?.unsubscribe(); readSub?.unsubscribe(); reactionSub?.unsubscribe(); } };
+	}
+
+	async function toggleReaction(msgId: string, emoji: string) {
+		const msgReactions = reactions[msgId] || [];
+		const existing = msgReactions.find((r) => r.emoji === emoji && r.userIds.includes(auth.user?.sub || ''));
+		try {
+			if (existing) {
+				await removeReaction(msgId, emoji);
+			} else {
+				await addReaction(msgId, emoji);
+			}
+		} catch { /* ignore */ }
 	}
 
 	function subscribeToTyping() {
@@ -313,7 +331,7 @@
 					<div class="h-px flex-1 bg-border"></div>
 				</div>
 			{/if}
-			<div class="mb-3 {isOwnMessage(msg) ? 'text-right' : ''}">
+			<div class="group mb-3 {isOwnMessage(msg) ? 'text-right' : ''}">
 				{#if !isOwnMessage(msg)}
 					<span class="text-xs text-muted-foreground">{msg.senderName}</span>
 				{/if}
@@ -334,12 +352,27 @@
 						<p class="text-sm text-foreground">{msg.content}</p>
 					{/if}
 				</div>
-				<div class="mt-0.5 text-[10px] text-muted-foreground/60">
+				<div class="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground/60">
 					{new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
 					{#if isOwnMessage(msg) && Object.entries(readStatus).some(([uid, mid]) => uid !== auth.user?.sub && mid >= msg.id)}
 						<span class="ml-1 text-primary/60">既読</span>
 					{/if}
+					{#each QUICK_EMOJIS.slice(0, 3) as emoji}
+						<button onclick={() => toggleReaction(msg.id, emoji)} class="ml-1 opacity-0 transition hover:opacity-100 group-hover:opacity-50">{emoji}</button>
+					{/each}
 				</div>
+				{#if reactions[msg.id]?.length}
+					<div class="mt-1 flex flex-wrap gap-1">
+						{#each reactions[msg.id] as r}
+							<button
+								onclick={() => toggleReaction(msg.id, r.emoji)}
+								class="rounded-full border px-1.5 py-0.5 text-xs {r.userIds.includes(auth.user?.sub || '') ? 'border-primary/50 bg-primary/10' : 'border-border bg-muted/30'}"
+							>
+								{r.emoji} {r.count}
+							</button>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		{/each}
 		<div bind:this={messagesEnd}></div>
