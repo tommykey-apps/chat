@@ -89,6 +89,11 @@ public class RoomController {
         return searchService.searchMessages(roomId, q, page, size);
     }
 
+    @GetMapping("/{roomId}/members")
+    public List<Map<String, String>> getMembers(@PathVariable UUID roomId) {
+        return roomService.getRoomMembersWithNames(roomId);
+    }
+
     @GetMapping("/{roomId}/read-status")
     public Map<String, String> getReadStatus(@PathVariable UUID roomId) {
         var members = roomService.getRoomMembers(roomId);

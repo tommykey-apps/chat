@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, addReaction, removeReaction, type Message, type Room, type ReactionGroup } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, getRoomMembers, editMessage, deleteMessage, addReaction, removeReaction, type Message, type Room, type ReactionGroup } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -27,6 +27,11 @@
 	let readStatus = $state<Record<string, string>>({});
 	let reactions = $state<Record<string, ReactionGroup[]>>({});
 	const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
+	let editingId = $state<string | null>(null);
+	let editContent = $state('');
+	let showMentionSuggest = $state(false);
+	let mentionQuery = $state('');
+	let roomMembers = $state<{userId: string, userName: string}[]>([]);
 	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 	let lastTypingSent = 0;
 
@@ -44,6 +49,7 @@
 			messages.forEach(resolveImageUrl);
 			scrollToBottom();
 			try { readStatus = await getReadStatus(roomId); } catch {}
+			try { roomMembers = await getRoomMembers(roomId); } catch {}
 			if (messages.length > 0) {
 				send(`/app/read/${roomId}`, { messageId: messages[messages.length - 1].id });
 			}
@@ -101,7 +107,27 @@
 			const data = JSON.parse(msg.body);
 			reactions = { ...reactions, [data.messageId]: data.reactions };
 		});
-		return { unsubscribe: () => { sub?.unsubscribe(); readSub?.unsubscribe(); reactionSub?.unsubscribe(); } };
+		const updateSub = subscribe(`/topic/room.${roomId}.update`, (msg) => {
+			const updated: Message = JSON.parse(msg.body);
+			messages = messages.map((m) => (m.id === updated.id ? updated : m));
+		});
+		const deleteSub = subscribe(`/topic/room.${roomId}.delete`, (msg) => {
+			const { messageId } = JSON.parse(msg.body);
+			messages = messages.filter((m) => m.id !== messageId);
+		});
+		return { unsubscribe: () => { sub?.unsubscribe(); readSub?.unsubscribe(); reactionSub?.unsubscribe(); updateSub?.unsubscribe(); deleteSub?.unsubscribe(); } };
+	}
+
+	async function handleEdit(msg: Message) { editingId = msg.id; editContent = msg.content; }
+
+	async function handleEditSave() {
+		if (!editingId || !editContent.trim()) return;
+		try { await editMessage(editingId, editContent); editingId = null; editContent = ''; } catch {}
+	}
+
+	async function handleDeleteMessage(msgId: string) {
+		if (!confirm('このメッセージを削除しますか？')) return;
+		try { await deleteMessage(msgId); } catch {}
 	}
 
 	async function toggleReaction(msgId: string, emoji: string) {
@@ -144,10 +170,28 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
+			if (showMentionSuggest) {
+				const filtered = roomMembers.filter((m) =>
+					m.userName?.toLowerCase().includes(mentionQuery.toLowerCase()) && m.userId !== auth.user?.sub
+				);
+				if (filtered.length > 0) selectMention(filtered[0]);
+				return;
+			}
 			handleSend();
 		} else {
 			sendTyping();
 		}
+	}
+
+	function handleInput() {
+		const atMatch = input.match(/@(\w*)$/);
+		if (atMatch) { mentionQuery = atMatch[1]; showMentionSuggest = true; }
+		else { showMentionSuggest = false; }
+	}
+
+	function selectMention(member: {userId: string, userName: string}) {
+		input = input.replace(/@\w*$/, `@${member.userName} `);
+		showMentionSuggest = false;
 	}
 
 	async function handleFileUpload() {
@@ -349,7 +393,21 @@
 					{:else if msg.messageType === 'FILE'}
 						<p class="text-sm text-foreground/80">ファイル</p>
 					{:else}
-						<p class="text-sm text-foreground">{msg.content}</p>
+						{#if editingId === msg.id}
+							<div class="flex gap-1">
+								<input type="text" bind:value={editContent} class="flex-1 rounded bg-background px-2 py-1 text-sm text-foreground" />
+								<button onclick={handleEditSave} class="text-xs text-primary">保存</button>
+								<button onclick={() => { editingId = null; }} class="text-xs text-muted-foreground">取消</button>
+							</div>
+						{:else}
+							<p class="text-sm text-foreground">{@html msg.content.replace(/@(\w+)/g, '<span class="font-medium text-primary">@$1</span>')}</p>
+						{/if}
+					{/if}
+					{#if isOwnMessage(msg) && msg.messageType === 'TEXT' && editingId !== msg.id}
+						<div class="mt-1 flex gap-2">
+							<button onclick={() => handleEdit(msg)} class="text-[10px] text-muted-foreground/40 hover:text-muted-foreground">編集</button>
+							<button onclick={() => handleDeleteMessage(msg.id)} class="text-[10px] text-muted-foreground/40 hover:text-red-400">削除</button>
+						</div>
 					{/if}
 				</div>
 				<div class="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground/60">
@@ -385,6 +443,15 @@
 		</div>
 	{/if}
 
+	<!-- Mention suggest -->
+	{#if showMentionSuggest}
+		<div class="shrink-0 border-t border-border bg-card px-4 py-2 sm:px-6">
+			{#each roomMembers.filter((m) => m.userName?.toLowerCase().includes(mentionQuery.toLowerCase()) && m.userId !== auth.user?.sub) as member}
+				<button onclick={() => selectMention(member)} class="block w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-muted">@{member.userName}</button>
+			{/each}
+		</div>
+	{/if}
+
 	<!-- Input -->
 	<div class="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-6">
 		<div class="flex items-center gap-2">
@@ -399,7 +466,8 @@
 				type="text"
 				bind:value={input}
 				onkeydown={handleKeydown}
-				placeholder="メッセージを入力..."
+				oninput={handleInput}
+				placeholder="メッセージを入力... (@でメンション)"
 				class="flex-1 rounded-lg border border-input bg-card px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
 			/>
 			<button
