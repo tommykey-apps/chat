@@ -1,5 +1,6 @@
 package com.example.chat.config;
 
+import com.example.chat.service.PresenceService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -16,9 +17,11 @@ import java.util.List;
 public class StompAuthInterceptor implements ChannelInterceptor {
 
     private final JwtDecoder jwtDecoder;
+    private final PresenceService presenceService;
 
-    public StompAuthInterceptor(JwtDecoder jwtDecoder) {
+    public StompAuthInterceptor(JwtDecoder jwtDecoder, PresenceService presenceService) {
         this.jwtDecoder = jwtDecoder;
+        this.presenceService = presenceService;
     }
 
     @Override
@@ -39,6 +42,14 @@ public class StompAuthInterceptor implements ChannelInterceptor {
                 var authentication = new UsernamePasswordAuthenticationToken(
                         sub, null, List.of());
                 accessor.setUser(authentication);
+                presenceService.setOnline(sub);
+            }
+        }
+
+        if (accessor != null && StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            var user = accessor.getUser();
+            if (user != null) {
+                presenceService.setOffline(user.getName());
             }
         }
 
