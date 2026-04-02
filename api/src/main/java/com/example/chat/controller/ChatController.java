@@ -3,6 +3,7 @@ package com.example.chat.controller;
 import com.example.chat.model.dto.MessageRequest;
 import com.example.chat.model.dto.MessageResponse;
 import com.example.chat.service.ChatService;
+import com.example.chat.service.UserService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -16,10 +17,12 @@ import java.util.UUID;
 public class ChatController {
 
     private final ChatService chatService;
+    private final UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatController(ChatService chatService, SimpMessagingTemplate messagingTemplate) {
+    public ChatController(ChatService chatService, UserService userService, SimpMessagingTemplate messagingTemplate) {
         this.chatService = chatService;
+        this.userService = userService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -28,7 +31,7 @@ public class ChatController {
                               @Payload MessageRequest request,
                               Principal principal) {
         String senderId = principal.getName();
-        String senderName = principal.getName();
+        String senderName = userService.getUser(senderId).getDisplayName();
         String messageType = request.messageType() != null ? request.messageType() : "TEXT";
 
         var saved = chatService.saveMessage(roomId, senderId, senderName, request.content(), messageType);
