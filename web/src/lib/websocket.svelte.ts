@@ -5,6 +5,10 @@ let client: Client | null = null;
 let connected = $state(false);
 let onConnectCallbacks: Array<() => void> = [];
 
+const INITIAL_RECONNECT_DELAY = 5000;
+const MAX_RECONNECT_DELAY = 60000;
+let currentReconnectDelay = INITIAL_RECONNECT_DELAY;
+
 export function getWsState() {
 	return {
 		get connected() { return connected; }
@@ -28,18 +32,26 @@ export function connect(onConnect?: () => void) {
 		connectHeaders: {
 			Authorization: `Bearer ${auth.token || ''}`
 		},
-		reconnectDelay: 5000,
+		reconnectDelay: currentReconnectDelay,
 		heartbeatIncoming: 10000,
 		heartbeatOutgoing: 10000,
 		onConnect: () => {
 			connected = true;
+			currentReconnectDelay = INITIAL_RECONNECT_DELAY;
+			if (client) client.reconnectDelay = currentReconnectDelay;
 			onConnectCallbacks.forEach((cb) => cb());
 		},
 		onDisconnect: () => {
 			connected = false;
 		},
 		onStompError: (frame) => {
-			console.error('STOMP error:', frame.headers['message']);
+			console.warn('STOMP error:', frame.headers['message']);
+			currentReconnectDelay = Math.min(currentReconnectDelay * 2, MAX_RECONNECT_DELAY);
+			if (client) client.reconnectDelay = currentReconnectDelay;
+		},
+		onWebSocketError: () => {
+			currentReconnectDelay = Math.min(currentReconnectDelay * 2, MAX_RECONNECT_DELAY);
+			if (client) client.reconnectDelay = currentReconnectDelay;
 		}
 	});
 
@@ -62,6 +74,7 @@ export function disconnect() {
 		client = null;
 		connected = false;
 		onConnectCallbacks = [];
+		currentReconnectDelay = INITIAL_RECONNECT_DELAY;
 	}
 }
 
