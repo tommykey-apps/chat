@@ -157,16 +157,16 @@
 								<span class="font-medium text-foreground">{friend.displayName}</span>
 								<span class="ml-2 text-xs text-muted-foreground">{friend.email}</span>
 							</div>
-							<div class="flex gap-2">
+							<div class="flex shrink-0 gap-1 sm:gap-2">
 								<button
 									onclick={() => handleStartChat(friend)}
-									class="rounded-lg bg-primary px-3 py-1 text-xs text-white hover:bg-primary/80"
+									class="shrink-0 rounded-lg bg-primary px-2 py-1 text-[10px] text-white hover:bg-primary/80 sm:px-3 sm:text-xs"
 								>
 									チャット
 								</button>
 								<button
 									onclick={() => { removeFriend(friend.id); loadFriends(); }}
-									class="rounded-lg px-3 py-1 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									class="shrink-0 rounded-lg px-2 py-1 text-[10px] text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:px-3 sm:text-xs"
 								>
 									削除
 								</button>
