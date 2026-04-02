@@ -129,6 +129,12 @@ public class RoomService {
                 .toList();
     }
 
+    public List<java.util.Map<String, String>> getRoomMembersWithNames(UUID roomId) {
+        return roomMemberRepository.findByRoomId(roomId).stream()
+                .map(m -> java.util.Map.of("userId", m.getUserId(), "userName", m.getUserName()))
+                .toList();
+    }
+
     @Transactional
     public void leaveRoom(UUID roomId, String userId) {
         roomMemberRepository.deleteByRoomIdAndUserId(roomId, userId);

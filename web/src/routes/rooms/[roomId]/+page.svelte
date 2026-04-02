@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, type Message, type Room } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, getRoomMembers, type Message, type Room } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -25,6 +25,9 @@
 	let messagesContainer: HTMLDivElement;
 	let typingUsers = $state<Record<string, string>>({});
 	let readStatus = $state<Record<string, string>>({});
+	let showMentionSuggest = $state(false);
+	let mentionQuery = $state('');
+	let roomMembers = $state<{userId: string, userName: string}[]>([]);
 	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 	let lastTypingSent = 0;
 
@@ -42,6 +45,7 @@
 			messages.forEach(resolveImageUrl);
 			scrollToBottom();
 			try { readStatus = await getReadStatus(roomId); } catch {}
+			try { roomMembers = await getRoomMembers(roomId) as any; } catch {}
 			if (messages.length > 0) {
 				send(`/app/read/${roomId}`, { messageId: messages[messages.length - 1].id });
 			}
@@ -126,10 +130,32 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
+			if (showMentionSuggest) {
+				const filtered = roomMembers.filter((m: any) =>
+					m.userName?.toLowerCase().includes(mentionQuery.toLowerCase()) && m.userId !== auth.user?.sub
+				);
+				if (filtered.length > 0) selectMention(filtered[0]);
+				return;
+			}
 			handleSend();
 		} else {
 			sendTyping();
 		}
+	}
+
+	function handleInput() {
+		const atMatch = input.match(/@(\w*)$/);
+		if (atMatch) {
+			mentionQuery = atMatch[1];
+			showMentionSuggest = true;
+		} else {
+			showMentionSuggest = false;
+		}
+	}
+
+	function selectMention(member: any) {
+		input = input.replace(/@\w*$/, `@${member.userName} `);
+		showMentionSuggest = false;
 	}
 
 	async function handleFileUpload() {
@@ -331,7 +357,7 @@
 					{:else if msg.messageType === 'FILE'}
 						<p class="text-sm text-foreground/80">ファイル</p>
 					{:else}
-						<p class="text-sm text-foreground">{msg.content}</p>
+						<p class="text-sm text-foreground">{@html msg.content.replace(/@(\w+)/g, '<span class="font-medium text-primary">@$1</span>')}</p>
 					{/if}
 				</div>
 				<div class="mt-0.5 text-[10px] text-muted-foreground/60">
@@ -352,6 +378,20 @@
 		</div>
 	{/if}
 
+	<!-- Mention suggest -->
+	{#if showMentionSuggest}
+		<div class="shrink-0 border-t border-border bg-card px-4 py-2 sm:px-6">
+			{#each roomMembers.filter((m) => m.userName?.toLowerCase().includes(mentionQuery.toLowerCase()) && m.userId !== auth.user?.sub) as member}
+				<button
+					onclick={() => selectMention(member)}
+					class="block w-full rounded px-2 py-1 text-left text-sm text-foreground hover:bg-muted"
+				>
+					@{member.userName}
+				</button>
+			{/each}
+		</div>
+	{/if}
+
 	<!-- Input -->
 	<div class="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-6">
 		<div class="flex items-center gap-2">
@@ -366,7 +406,8 @@
 				type="text"
 				bind:value={input}
 				onkeydown={handleKeydown}
-				placeholder="メッセージを入力..."
+				oninput={handleInput}
+				placeholder="メッセージを入力... (@でメンション)"
 				class="flex-1 rounded-lg border border-input bg-card px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
 			/>
 			<button
