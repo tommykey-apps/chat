@@ -83,6 +83,9 @@ export interface UserInfo {
 	createdAt: string;
 }
 
+export const getReadStatus = (roomId: string) =>
+	request<Record<string, string>>('GET', `/api/rooms/${roomId}/read-status`);
+
 export const getMe = () => request<UserInfo>('GET', '/api/users/me');
 
 export const updateProfile = (displayName: string) =>

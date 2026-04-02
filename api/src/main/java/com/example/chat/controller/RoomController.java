@@ -7,11 +7,14 @@ import com.example.chat.service.ChatService;
 import com.example.chat.service.RoomService;
 import com.example.chat.service.SearchService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,11 +24,14 @@ public class RoomController {
     private final RoomService roomService;
     private final ChatService chatService;
     private final SearchService searchService;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public RoomController(RoomService roomService, ChatService chatService, SearchService searchService) {
+    public RoomController(RoomService roomService, ChatService chatService,
+                          SearchService searchService, RedisTemplate<String, String> redisTemplate) {
         this.roomService = roomService;
         this.chatService = chatService;
         this.searchService = searchService;
+        this.redisTemplate = redisTemplate;
     }
 
     @PostMapping
@@ -81,5 +87,16 @@ public class RoomController {
                                                 @RequestParam(defaultValue = "0") int page,
                                                 @RequestParam(defaultValue = "50") int size) {
         return searchService.searchMessages(roomId, q, page, size);
+    }
+
+    @GetMapping("/{roomId}/read-status")
+    public Map<String, String> getReadStatus(@PathVariable UUID roomId) {
+        var members = roomService.getRoomMembers(roomId);
+        var result = new HashMap<String, String>();
+        for (var userId : members) {
+            var lastRead = redisTemplate.opsForValue().get("read:" + roomId + ":" + userId);
+            if (lastRead != null) result.put(userId, lastRead);
+        }
+        return result;
     }
 }
