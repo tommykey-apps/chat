@@ -56,6 +56,12 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:prod .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:prod
 
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name url-shortener-cluster --region ${{ env.AWS_REGION }}
+
+      - name: Restart API pods
+        run: kubectl rollout restart deployment chat-api -n chat
+
   deploy-web:
     runs-on: ubuntu-latest
     steps:

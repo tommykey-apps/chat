@@ -16,15 +16,9 @@ spec:
             - name: ECR
               api_url: https://831963379503.dkr.ecr.ap-northeast-1.amazonaws.com
               prefix: 831963379503.dkr.ecr.ap-northeast-1.amazonaws.com
-              credentials: ext:/scripts/ecr-login.sh
-              credsexpire: 10h
-        authScripts:
-          enabled: true
-          scripts:
-            ecr-login.sh: |
-              #!/bin/sh
-              aws ecr get-login-password --region ap-northeast-1
+              default: true
         serviceAccount:
+          create: true
           annotations:
             eks.amazonaws.com/role-arn: arn:aws:iam::831963379503:role/argocd-image-updater
   destination:
