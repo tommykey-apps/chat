@@ -5,10 +5,12 @@ import com.example.chat.model.entity.ChatMessage;
 import com.example.chat.model.entity.ChatRoom;
 import com.example.chat.model.entity.RoomMember;
 import com.example.chat.model.entity.User;
+import com.example.chat.repository.ChatMessageRepository;
 import com.example.chat.repository.ChatRoomRepository;
 import com.example.chat.repository.RoomMemberRepository;
 import com.example.chat.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +37,9 @@ class RoomServiceTest {
     private ChatRoomRepository chatRoomRepository;
 
     @Mock
+    private ChatMessageRepository chatMessageRepository;
+
+    @Mock
     private RoomMemberRepository roomMemberRepository;
 
     @Mock
@@ -48,6 +53,12 @@ class RoomServiceTest {
 
     @InjectMocks
     private RoomService roomService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(any()))
+                .thenReturn(Optional.empty());
+    }
 
     @Test
     void createRoom_savesRoomAndOwnerMember_returnsRoomResponse() {
