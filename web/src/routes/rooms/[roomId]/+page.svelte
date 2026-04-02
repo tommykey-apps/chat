@@ -112,6 +112,24 @@
 		return msg.senderId === auth.user?.sub;
 	}
 
+	function formatDate(dateStr: string) {
+		const d = new Date(dateStr);
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const yesterday = new Date(today.getTime() - 86400000);
+		const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+		if (msgDate.getTime() === today.getTime()) return '今日';
+		if (msgDate.getTime() === yesterday.getTime()) return '昨日';
+		return d.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+	}
+
+	function shouldShowDateSeparator(msgs: Message[], index: number) {
+		if (index === 0) return true;
+		const prev = new Date(msgs[index - 1].createdAt).toDateString();
+		const curr = new Date(msgs[index].createdAt).toDateString();
+		return prev !== curr;
+	}
+
 	$effect(() => {
 		if (auth.isAuthenticated && roomId) {
 			untrack(() => {
@@ -195,7 +213,14 @@
 		{#if messages.length === 0}
 			<p class="text-center text-sm text-muted-foreground/60">メッセージはまだありません</p>
 		{/if}
-		{#each messages as msg (msg.id)}
+		{#each messages as msg, i (msg.id)}
+			{#if shouldShowDateSeparator(messages, i)}
+				<div class="my-4 flex items-center gap-3">
+					<div class="h-px flex-1 bg-border"></div>
+					<span class="text-xs text-muted-foreground/60">{formatDate(msg.createdAt)}</span>
+					<div class="h-px flex-1 bg-border"></div>
+				</div>
+			{/if}
 			<div class="mb-3 {isOwnMessage(msg) ? 'text-right' : ''}">
 				{#if !isOwnMessage(msg)}
 					<span class="text-xs text-muted-foreground">{msg.senderName}</span>
