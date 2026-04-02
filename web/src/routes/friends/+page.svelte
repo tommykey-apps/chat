@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import {
 		listFriends, listFriendRequests, searchUsers, sendFriendRequest,
-		acceptFriendRequest, removeFriend, createRoom,
+		acceptFriendRequest, removeFriend, createRoom, listRooms,
 		type UserInfo, type FriendRequest
 	} from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
@@ -60,6 +60,14 @@
 	}
 
 	async function handleStartChat(friend: UserInfo) {
+		const rooms = await listRooms();
+		const existing = rooms.find(
+			(r) => r.description === 'DM' && r.memberCount === 2 && r.name === friend.displayName
+		);
+		if (existing) {
+			goto(`/rooms/${existing.id}`);
+			return;
+		}
 		const room = await createRoom(`${friend.displayName}`, 'DM', [friend.id]);
 		goto(`/rooms/${room.id}`);
 	}
