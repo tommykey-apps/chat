@@ -35,7 +35,8 @@ public class RoomController {
                 request.name(),
                 request.description(),
                 principal.getName(),
-                principal.getName()
+                principal.getName(),
+                request.memberIds()
         );
     }
 

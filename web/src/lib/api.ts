@@ -43,8 +43,8 @@ export interface PageResponse<T> {
 	number: number;
 }
 
-export const createRoom = (name: string, description: string) =>
-	request<Room>('POST', '/api/rooms', { name, description });
+export const createRoom = (name: string, description: string, memberIds?: string[]) =>
+	request<Room>('POST', '/api/rooms', { name, description, memberIds });
 
 export const listRooms = () =>
 	request<Room[]>('GET', '/api/rooms');

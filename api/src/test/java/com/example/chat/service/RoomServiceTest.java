@@ -4,8 +4,10 @@ import com.example.chat.model.dto.RoomResponse;
 import com.example.chat.model.entity.ChatMessage;
 import com.example.chat.model.entity.ChatRoom;
 import com.example.chat.model.entity.RoomMember;
+import com.example.chat.model.entity.User;
 import com.example.chat.repository.ChatRoomRepository;
 import com.example.chat.repository.RoomMemberRepository;
+import com.example.chat.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +38,9 @@ class RoomServiceTest {
     private RoomMemberRepository roomMemberRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private ChatService chatService;
 
     @Mock
@@ -57,7 +62,7 @@ class RoomServiceTest {
         });
         when(roomMemberRepository.save(any(RoomMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RoomResponse response = roomService.createRoom("general", "General chat", "user1", "Alice");
+        RoomResponse response = roomService.createRoom("general", "General chat", "user1", "Alice", null);
 
         assertThat(response.id()).isEqualTo(roomId);
         assertThat(response.name()).isEqualTo("general");
@@ -72,6 +77,49 @@ class RoomServiceTest {
         assertThat(savedMember.getUserId()).isEqualTo("user1");
         assertThat(savedMember.getUserName()).isEqualTo("Alice");
         assertThat(savedMember.getRole()).isEqualTo("OWNER");
+    }
+
+    @Test
+    void createRoom_withMemberIds_addsMembers() {
+        var roomId = UUID.randomUUID();
+        var now = Instant.now();
+
+        when(chatRoomRepository.save(any(ChatRoom.class))).thenAnswer(invocation -> {
+            ChatRoom room = invocation.getArgument(0);
+            room.setId(roomId);
+            room.setCreatedAt(now);
+            return room;
+        });
+        when(roomMemberRepository.save(any(RoomMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var friend = new User();
+        friend.setId("user2");
+        friend.setDisplayName("Bob");
+        when(userRepository.findById("user2")).thenReturn(Optional.of(friend));
+
+        RoomResponse response = roomService.createRoom("Bob", "DM", "user1", "Alice", List.of("user2"));
+
+        assertThat(response.memberCount()).isEqualTo(2);
+        verify(roomMemberRepository, times(2)).save(any(RoomMember.class));
+    }
+
+    @Test
+    void createRoom_withMemberIds_skipsCreatorId() {
+        var roomId = UUID.randomUUID();
+
+        when(chatRoomRepository.save(any(ChatRoom.class))).thenAnswer(invocation -> {
+            ChatRoom room = invocation.getArgument(0);
+            room.setId(roomId);
+            room.setCreatedAt(Instant.now());
+            return room;
+        });
+        when(roomMemberRepository.save(any(RoomMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RoomResponse response = roomService.createRoom("Self", "DM", "user1", "Alice", List.of("user1"));
+
+        assertThat(response.memberCount()).isEqualTo(1);
+        verify(roomMemberRepository, times(1)).save(any(RoomMember.class));
+        verify(userRepository, never()).findById(any());
     }
 
     @Test

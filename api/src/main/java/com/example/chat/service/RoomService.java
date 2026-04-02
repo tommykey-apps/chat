@@ -5,6 +5,7 @@ import com.example.chat.model.entity.ChatRoom;
 import com.example.chat.model.entity.RoomMember;
 import com.example.chat.repository.ChatRoomRepository;
 import com.example.chat.repository.RoomMemberRepository;
+import com.example.chat.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -18,35 +19,57 @@ public class RoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final UserRepository userRepository;
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
     public RoomService(ChatRoomRepository chatRoomRepository,
                        RoomMemberRepository roomMemberRepository,
+                       UserRepository userRepository,
                        ChatService chatService,
                        SimpMessagingTemplate messagingTemplate) {
         this.chatRoomRepository = chatRoomRepository;
         this.roomMemberRepository = roomMemberRepository;
+        this.userRepository = userRepository;
         this.chatService = chatService;
         this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
-    public RoomResponse createRoom(String name, String description, String userId, String userName) {
+    public RoomResponse createRoom(String name, String description, String userId, String userName,
+                                   List<String> memberIds) {
         var room = new ChatRoom();
         room.setName(name);
         room.setDescription(description);
         room.setCreatedBy(userId);
         chatRoomRepository.save(room);
 
-        var member = new RoomMember();
-        member.setRoomId(room.getId());
-        member.setUserId(userId);
-        member.setUserName(userName);
-        member.setRole("OWNER");
-        roomMemberRepository.save(member);
+        var owner = new RoomMember();
+        owner.setRoomId(room.getId());
+        owner.setUserId(userId);
+        owner.setUserName(userName);
+        owner.setRole("OWNER");
+        roomMemberRepository.save(owner);
 
-        return toResponse(room, 1);
+        int memberCount = 1;
+        if (memberIds != null) {
+            for (String memberId : memberIds) {
+                if (memberId.equals(userId)) continue;
+                var userOpt = userRepository.findById(memberId);
+                if (userOpt.isPresent()) {
+                    var user = userOpt.get();
+                    var member = new RoomMember();
+                    member.setRoomId(room.getId());
+                    member.setUserId(user.getId());
+                    member.setUserName(user.getDisplayName());
+                    member.setRole("MEMBER");
+                    roomMemberRepository.save(member);
+                    memberCount++;
+                }
+            }
+        }
+
+        return toResponse(room, memberCount);
     }
 
     @Transactional(readOnly = true)

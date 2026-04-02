@@ -60,7 +60,7 @@
 	}
 
 	async function handleStartChat(friend: UserInfo) {
-		const room = await createRoom(`${friend.displayName}`, 'DM');
+		const room = await createRoom(`${friend.displayName}`, 'DM', [friend.id]);
 		goto(`/rooms/${room.id}`);
 	}
 

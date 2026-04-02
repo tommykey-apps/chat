@@ -1,4 +1,6 @@
 package com.example.chat.model.dto;
 
-public record RoomRequest(String name, String description) {
+import java.util.List;
+
+public record RoomRequest(String name, String description, List<String> memberIds) {
 }
