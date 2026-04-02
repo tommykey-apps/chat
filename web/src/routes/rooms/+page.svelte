@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { listRooms, createRoom, joinRoom, type Room } from '$lib/api';
-	import { getAuthState } from '$lib/stores/auth.svelte';
+	import { getAuthState, logout } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card';
@@ -54,7 +54,15 @@
 			<h1 class="text-lg font-bold"><span class="text-primary">#</span> チャットルーム</h1>
 			<a href="/friends" class="text-sm text-muted-foreground hover:text-foreground">フレンド</a>
 		</div>
-		<Button onclick={() => (showCreate = !showCreate)}>新規作成</Button>
+		<div class="flex items-center gap-2">
+			<Button onclick={() => (showCreate = !showCreate)}>新規作成</Button>
+			<button
+				onclick={() => { logout(); goto('/login'); }}
+				class="rounded px-3 py-1 text-xs text-muted-foreground hover:bg-red-950 hover:text-red-400"
+			>
+				ログアウト
+			</button>
+		</div>
 	</header>
 
 	<main class="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6">
