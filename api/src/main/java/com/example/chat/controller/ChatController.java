@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -46,5 +47,13 @@ public class ChatController {
         );
 
         messagingTemplate.convertAndSend("/topic/room." + roomId, response);
+    }
+
+    @MessageMapping("/typing/{roomId}")
+    public void handleTyping(@DestinationVariable UUID roomId, Principal principal) {
+        String senderId = principal.getName();
+        String senderName = userService.getUser(senderId).getDisplayName();
+        messagingTemplate.convertAndSend("/topic/room." + roomId + ".typing",
+                Map.of("userId", senderId, "userName", senderName));
     }
 }

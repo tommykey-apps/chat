@@ -23,6 +23,9 @@
 	let totalPages = 1;
 	let loadingMore = $state(false);
 	let messagesContainer: HTMLDivElement;
+	let typingUsers = $state<Record<string, string>>({});
+	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+	let lastTypingSent = 0;
 
 	const roomId = $derived(page.params.roomId);
 	const auth = getAuthState();
@@ -84,6 +87,25 @@
 		});
 	}
 
+	function subscribeToTyping() {
+		return subscribe(`/topic/room.${roomId}.typing`, (msg) => {
+			const data = JSON.parse(msg.body);
+			if (data.userId === auth.user?.sub) return;
+			typingUsers = { ...typingUsers, [data.userId]: data.userName };
+			setTimeout(() => {
+				const { [data.userId]: _, ...rest } = typingUsers;
+				typingUsers = rest;
+			}, 3000);
+		});
+	}
+
+	function sendTyping() {
+		const now = Date.now();
+		if (now - lastTypingSent < 2000) return;
+		lastTypingSent = now;
+		send(`/app/typing/${roomId}`, {});
+	}
+
 	function handleSend() {
 		if (!input.trim()) return;
 		send(`/app/chat/${roomId}`, { content: input, messageType: 'TEXT' });
@@ -94,6 +116,8 @@
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			handleSend();
+		} else {
+			sendTyping();
 		}
 	}
 
@@ -189,7 +213,8 @@
 	$effect(() => {
 		if (ws.connected && roomId) {
 			const sub = untrack(() => subscribeToRoom());
-			return () => sub?.unsubscribe();
+			const typingSub = untrack(() => subscribeToTyping());
+			return () => { sub?.unsubscribe(); typingSub?.unsubscribe(); };
 		}
 	});
 </script>
@@ -305,6 +330,13 @@
 		{/each}
 		<div bind:this={messagesEnd}></div>
 	</div>
+
+	<!-- Typing indicator -->
+	{#if Object.keys(typingUsers).length > 0}
+		<div class="shrink-0 px-4 py-1 text-xs text-muted-foreground/60 sm:px-6">
+			{Object.values(typingUsers).join(', ')} が入力中...
+		</div>
+	{/if}
 
 	<!-- Input -->
 	<div class="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-6">
