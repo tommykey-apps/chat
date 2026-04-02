@@ -19,6 +19,10 @@
 	let searchResults = $state<Message[]>([]);
 	let searching = $state(false);
 	let imageUrls = $state<Record<string, string>>({});
+	let currentPage = 0;
+	let totalPages = 1;
+	let loadingMore = $state(false);
+	let messagesContainer: HTMLDivElement;
 
 	const roomId = $derived(page.params.roomId);
 	const auth = getAuthState();
@@ -27,12 +31,43 @@
 	async function loadRoom() {
 		try {
 			room = await getRoom(roomId);
-			const res = await getMessages(roomId);
+			currentPage = 0;
+			const res = await getMessages(roomId, 0);
+			totalPages = res.totalPages;
 			messages = res.content.reverse();
 			messages.forEach(resolveImageUrl);
 			scrollToBottom();
 		} catch {
 			goto('/rooms');
+		}
+	}
+
+	async function loadMoreMessages() {
+		if (loadingMore || currentPage + 1 >= totalPages) return;
+		loadingMore = true;
+		try {
+			const prevScrollHeight = messagesContainer?.scrollHeight || 0;
+			const res = await getMessages(roomId, currentPage + 1);
+			currentPage++;
+			const older = res.content.reverse();
+			older.forEach(resolveImageUrl);
+			messages = [...older, ...messages];
+			// Maintain scroll position
+			setTimeout(() => {
+				if (messagesContainer) {
+					messagesContainer.scrollTop = messagesContainer.scrollHeight - prevScrollHeight;
+				}
+			}, 0);
+		} catch {
+			// ignore
+		} finally {
+			loadingMore = false;
+		}
+	}
+
+	function handleScroll() {
+		if (messagesContainer && messagesContainer.scrollTop === 0) {
+			loadMoreMessages();
 		}
 	}
 
@@ -227,7 +262,10 @@
 	{/if}
 
 	<!-- Messages -->
-	<div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+	<div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6" bind:this={messagesContainer} onscroll={handleScroll}>
+		{#if loadingMore}
+			<p class="py-2 text-center text-xs text-muted-foreground/60">読み込み中...</p>
+		{/if}
 		{#if messages.length === 0}
 			<p class="text-center text-sm text-muted-foreground/60">メッセージはまだありません</p>
 		{/if}
