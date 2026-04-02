@@ -88,6 +88,9 @@ export const getMe = () => request<UserInfo>('GET', '/api/users/me');
 export const updateProfile = (displayName: string) =>
 	request<UserInfo>('PATCH', '/api/users/me', { displayName });
 
+export const getOnlineUsers = (ids: string[]) =>
+	request<string[]>('GET', `/api/users/online?ids=${ids.join(',')}`);
+
 export const searchUsers = (q: string) =>
 	request<UserInfo[]>('GET', `/api/users/search?q=${encodeURIComponent(q)}`);
 

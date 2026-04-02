@@ -2,13 +2,14 @@
 	import { goto } from '$app/navigation';
 	import {
 		listFriends, listFriendRequests, searchUsers, sendFriendRequest,
-		acceptFriendRequest, removeFriend, createRoom, listRooms,
+		acceptFriendRequest, removeFriend, createRoom, listRooms, getOnlineUsers,
 		type UserInfo, type FriendRequest
 	} from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 
 	let tab = $state<'friends' | 'requests'>('friends');
 	let friends = $state<UserInfo[]>([]);
+	let onlineIds = $state<string[]>([]);
 	let requests = $state<FriendRequest[]>([]);
 	let searchQuery = $state('');
 	let searchResults = $state<UserInfo[]>([]);
@@ -19,6 +20,13 @@
 
 	async function loadFriends() {
 		friends = await listFriends();
+		if (friends.length > 0) {
+			try {
+				onlineIds = await getOnlineUsers(friends.map((f) => f.id));
+			} catch {
+				onlineIds = [];
+			}
+		}
 	}
 
 	async function loadRequests() {
@@ -154,7 +162,14 @@
 					{#each friends as friend (friend.id)}
 						<div class="flex items-center justify-between rounded-lg border border-border bg-card p-4">
 							<div>
-								<span class="font-medium text-foreground">{friend.displayName}</span>
+								<span class="font-medium text-foreground">
+									{#if onlineIds.includes(friend.id)}
+										<span class="mr-1 inline-block h-2 w-2 rounded-full bg-green-500"></span>
+									{:else}
+										<span class="mr-1 inline-block h-2 w-2 rounded-full bg-muted-foreground/30"></span>
+									{/if}
+									{friend.displayName}
+								</span>
 								<span class="ml-2 text-xs text-muted-foreground">{friend.email}</span>
 							</div>
 							<div class="flex shrink-0 gap-1 sm:gap-2">
