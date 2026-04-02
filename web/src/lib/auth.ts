@@ -58,6 +58,26 @@ export function getSession(): Promise<CognitoUserSession | null> {
 	});
 }
 
+export function forgotPassword(email: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
+		cognitoUser.forgotPassword({
+			onSuccess: () => resolve(),
+			onFailure: (err) => reject(err)
+		});
+	});
+}
+
+export function confirmNewPassword(email: string, code: string, newPassword: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
+		cognitoUser.confirmPassword(code, newPassword, {
+			onSuccess: () => resolve(),
+			onFailure: (err) => reject(err)
+		});
+	});
+}
+
 export function logout(): void {
 	const cognitoUser = userPool.getCurrentUser();
 	if (cognitoUser) cognitoUser.signOut();
