@@ -34,3 +34,12 @@ web/.env*
 
 # Docker
 docker-compose.override.yml
+
+# Playwright MCP
+.playwright-mcp/
+
+# Claude worktrees
+.claude/worktrees/
+
+# Screenshots
+*.png

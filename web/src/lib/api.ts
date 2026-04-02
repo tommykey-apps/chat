@@ -86,6 +86,16 @@ export interface UserInfo {
 export const getReadStatus = (roomId: string) =>
 	request<Record<string, string>>('GET', `/api/rooms/${roomId}/read-status`);
 
+export const getRoomMembers = (roomId: string) =>
+	request<{userId: string, userName: string}[]>('GET', `/api/rooms/${roomId}/members`);
+
+// Messages
+export const editMessage = (messageId: string, content: string) =>
+	request<Message>('PUT', `/api/messages/${messageId}`, { content });
+
+export const deleteMessage = (messageId: string) =>
+	request<void>('DELETE', `/api/messages/${messageId}`);
+
 // Reactions
 export interface ReactionGroup {
 	emoji: string;
