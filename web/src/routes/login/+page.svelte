@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { signUp, confirmSignUp, login as cognitoLogin } from '$lib/auth';
+	import { signUp, confirmSignUp, login as cognitoLogin, forgotPassword, confirmNewPassword } from '$lib/auth';
 	import { setAuth } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -8,10 +8,11 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Alert from '$lib/components/ui/alert';
 
-	let mode = $state<'login' | 'signup' | 'confirm'>('login');
+	let mode = $state<'login' | 'signup' | 'confirm' | 'forgot' | 'reset'>('login');
 	let email = $state('');
 	let password = $state('');
 	let confirmCode = $state('');
+	let newPassword = $state('');
 	let error = $state('');
 	let loading = $state(false);
 
@@ -58,6 +59,32 @@
 			loading = false;
 		}
 	}
+
+	async function handleForgot() {
+		loading = true;
+		error = '';
+		try {
+			await forgotPassword(email);
+			mode = 'reset';
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'パスワードリセットに失敗しました';
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function handleReset() {
+		loading = true;
+		error = '';
+		try {
+			await confirmNewPassword(email, confirmCode, newPassword);
+			mode = 'login';
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'パスワードリセットに失敗しました';
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <div class="flex min-h-screen items-center justify-center px-4">
@@ -79,6 +106,26 @@
 					/>
 					<Button type="submit" disabled={loading} class="w-full">
 						{loading ? '確認中...' : '確認'}
+					</Button>
+				</form>
+			{:else if mode === 'forgot'}
+				<form onsubmit={(e) => { e.preventDefault(); handleForgot(); }} class="flex flex-col gap-4">
+					<p class="text-sm text-muted-foreground">メールアドレスを入力してください。リセットコードを送信します。</p>
+					<Input type="email" bind:value={email} placeholder="メールアドレス" required />
+					<Button type="submit" disabled={loading} class="w-full">
+						{loading ? '送信中...' : 'リセットコード送信'}
+					</Button>
+					<button type="button" onclick={() => { mode = 'login'; error = ''; }} class="text-xs text-muted-foreground hover:text-foreground">
+						ログインに戻る
+					</button>
+				</form>
+			{:else if mode === 'reset'}
+				<form onsubmit={(e) => { e.preventDefault(); handleReset(); }} class="flex flex-col gap-4">
+					<p class="text-sm text-muted-foreground">メールに届いたコードと新しいパスワードを入力してください</p>
+					<Input type="text" bind:value={confirmCode} placeholder="リセットコード" required />
+					<Input type="password" bind:value={newPassword} placeholder="新しいパスワード" required minlength={8} />
+					<Button type="submit" disabled={loading} class="w-full">
+						{loading ? '処理中...' : 'パスワードをリセット'}
 					</Button>
 				</form>
 			{:else}
@@ -109,6 +156,11 @@
 					<Button type="submit" disabled={loading} class="w-full">
 						{loading ? '処理中...' : mode === 'login' ? 'ログイン' : 'サインアップ'}
 					</Button>
+					{#if mode === 'login'}
+						<button type="button" onclick={() => { mode = 'forgot'; error = ''; }} class="text-xs text-muted-foreground hover:text-foreground">
+							パスワードを忘れた方
+						</button>
+					{/if}
 				</form>
 			{/if}
 
