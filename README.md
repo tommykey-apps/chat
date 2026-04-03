@@ -1,6 +1,6 @@
-# Chat
+# chatto
 
-リアルタイムチャットアプリ。フレンド機能、Elasticsearch全文検索、画像送信、WebSocket (STOMP) によるリアルタイムメッセージングを実装。
+リアルタイムチャットアプリ。フレンド、DM、リアクション、メンション、既読、タイピングインジケーター、全文検索、画像送信、Web Push 通知を実装。
 
 ## 構成図
 
@@ -33,9 +33,9 @@
 | EKS | Spring Boot + Elasticsearch の Pod を動かすクラスタ |
 | EC2 | EKSのワーカーノード (t3.medium) |
 | ECR | Docker イメージ置き場 |
-| RDS (PostgreSQL) | チャットルーム、メッセージ、メンバー、ユーザー、フレンドシップの保存 |
-| ElastiCache (Redis) | オンライン状態の管理、未読カウント |
-| Cognito | ユーザー登録、ログイン、JWT 発行 |
+| RDS (PostgreSQL) | チャットルーム、メッセージ、メンバー、ユーザー、フレンドシップ、リアクションの保存 |
+| ElastiCache (Redis) | オンライン状態の管理、未読カウント、既読状態 |
+| Cognito | ユーザー登録、ログイン、パスワードリセット、JWT 発行 |
 | SQS | メッセージ送信時の通知処理キュー (DLQ付き) |
 | S3 | フロントの配信 + チャットで送るファイルの保存 + Terraform state |
 | CloudFront | フロント + REST API + WebSocket の HTTPS 配信 |
@@ -46,54 +46,54 @@
 
 ## 機能
 
-- ユーザー認証（サインアップ、ログイン、JWT）
-- チャットルームの作成・参加・退出
-- WebSocket (STOMP) によるリアルタイムメッセージ送受信
+### チャット
+- リアルタイムメッセージ送受信（WebSocket / STOMP）
+- メッセージの編集・削除（送信者のみ）
+- 絵文字リアクション（👍 ❤️ 😂、トグル式）
+- @メンション（入力サジェスト + ハイライト表示）
+- タイピングインジケーター（「○○が入力中...」）
+- 既読表示
+- メッセージ検索（Elasticsearch 全文検索）
 - 画像・ファイルのアップロード（S3 presigned URL）
-- Elasticsearch による全文検索
-- フレンド機能（ユーザー検索、申請、承認、DM開始）
-- アプリ内通知（トースト + 未読バッジ、STOMP `/user/queue/notifications`）
+- 無限スクロール（ページネーション）
+- 日付セパレーター（「今日」「昨日」「3月30日」）
+
+### ルーム
+- ルーム作成・参加・退出・削除
+- DM ルーム作成時にフレンドを自動招待
+- DM ルームの重複防止
+- ルーム一覧に最後のメッセージプレビュー + 未読バッジ
+
+### ユーザー
+- サインアップ・ログイン・ログアウト（Cognito）
+- パスワードリセット（メール確認コード）
+- プロフィール設定（表示名の変更）
+- オンライン/オフライン状態表示
+
+### フレンド
+- ユーザー検索（メールアドレスまたは名前）
+- フレンド申請・承認・拒否・削除
+
+### 通知
+- アプリ内トースト通知 + 未読バッジ（STOMP `/user/queue/notifications`）
 - ブラウザ Push 通知（Web Push API + VAPID + Service Worker）
-- SQS による非同期通知パイプライン（ローカル開発は Spring Event fallback）
+- SQS による非同期通知パイプライン
+
+## API ドキュメント
+
+ローカル起動後: http://localhost:8080/swagger-ui/index.html
 
 ## ディレクトリ構成
 
 ```
-chat/
+chatto/
 ├── api/          # Spring Boot (Java 21)
 ├── web/          # SvelteKit フロント（shadcn-svelte）
 ├── infra/        # Terraform（EKS, VPC, RDS, Redis, S3, CloudFront 等）
 ├── manifests/    # K8s マニフェスト + ArgoCD
 ├── docs/         # 構成図 (draw.io)
-└── .github/      # GitHub Actions（Docker build + Terraform apply）
+└── .github/      # GitHub Actions（CI/CD）
 ```
-
-## API
-
-| Method | Path | 何するか |
-|--------|------|---------|
-| POST | `/api/rooms` | ルーム作成 |
-| GET | `/api/rooms` | ルーム一覧 |
-| GET | `/api/rooms/{id}` | ルーム詳細 |
-| POST | `/api/rooms/{id}/join` | 参加 |
-| DELETE | `/api/rooms/{id}/leave` | 退出 |
-| GET | `/api/rooms/{id}/messages` | メッセージ履歴 |
-| GET | `/api/rooms/{id}/messages/search` | メッセージ検索 (Elasticsearch) |
-| POST | `/api/files/presign-upload` | ファイルアップロード URL |
-| GET | `/api/files/presign-download/**` | ファイルダウンロード URL |
-| GET | `/api/users/me` | 自分の情報 |
-| GET | `/api/users/search` | ユーザー検索 |
-| GET | `/api/friends` | フレンド一覧 |
-| GET | `/api/friends/requests` | 受信した申請一覧 |
-| POST | `/api/friends/{id}/request` | フレンド申請 |
-| POST | `/api/friends/{id}/accept` | 申請承認 |
-| DELETE | `/api/friends/{id}` | フレンド削除 |
-| GET | `/api/notifications/unread` | 未読カウント取得 |
-| DELETE | `/api/notifications/unread/{roomId}` | 未読クリア |
-| GET | `/api/push/vapid-key` | VAPID 公開鍵取得 |
-| POST | `/api/push/subscribe` | Push 通知購読登録 |
-| DELETE | `/api/push/unsubscribe` | Push 通知購読解除 |
-| WebSocket | `/ws` | STOMP でリアルタイムメッセージ |
 
 ## ローカルで動かす
 
