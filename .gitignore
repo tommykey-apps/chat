@@ -43,3 +43,4 @@ docker-compose.override.yml
 
 # Screenshots
 *.png
+manifests/argocd/repo-secret.yaml

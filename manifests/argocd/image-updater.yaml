@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argocd-image-updater
+    targetRevision: 0.11.0
+    helm:
+      values: |
+        serviceAccount:
+          create: true
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::831963379503:role/argocd-image-updater
+
+        config:
+          registries:
+            - name: ECR
+              api_url: https://831963379503.dkr.ecr.ap-northeast-1.amazonaws.com
+              prefix: 831963379503.dkr.ecr.ap-northeast-1.amazonaws.com
+              default: true
+              credentials: ext:/scripts/login.sh
+              credsexpire: 6h
+
+        authScripts:
+          enabled: true
+          scripts:
+            login.sh: |
+              #!/bin/sh
+              set -e
+              aws ecr --region ap-northeast-1 get-authorization-token --output text --query 'authorizationData[0].authorizationToken' | base64 -d
+
+        extraEnv:
+          - name: HOME
+            value: /tmp
+          - name: AWS_REGION
+            value: ap-northeast-1
+          - name: AWS_DEFAULT_REGION
+            value: ap-northeast-1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

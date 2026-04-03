@@ -23,7 +23,7 @@
 | 通知 | Web Push (VAPID) + アプリ内トースト + 未読バッジ |
 | テスト | JUnit 5 + Mockito + Testcontainers / Vitest / Playwright |
 | IaC | Terraform (S3バックエンド + DynamoDB state lock) |
-| CI/CD | GitHub Actions + ArgoCD (GitOps) |
+| CI/CD | GitHub Actions + ArgoCD + Image Updater |
 | 配信 | CloudFront (S3 + ALB を同一ドメインで配信) |
 
 ## 使ってるAWSサービス
@@ -115,15 +115,17 @@ main に push すると自動デプロイ。
 
 ```
 main push → GitHub Actions
-  ├── deploy-api: Docker build → ECR push (:SHA) → kustomize edit set image → git push
+  ├── deploy-api: Docker build → ECR push (:prod)
   ├── deploy-web: pnpm build → S3 sync → CloudFront invalidate
   └── deploy-infra: terraform apply (infra/ 変更時のみ)
 
-git push 後:
-  ArgoCD が manifests/ の変更を検知 → auto sync → Pod 更新
+ECR push 後:
+  Image Updater が prod タグの digest 変更を検知
+  → kustomization.yaml を更新して git commit/push（deploy key）
+  → ArgoCD が auto sync → Pod 更新
 ```
 
-イミュータブルタグ（コミットSHA）で ECR に push し、`kustomization.yaml` のタグを更新して git push。ArgoCD が自動で sync してデプロイ。
+Image Updater が git write-back モードで `kustomization.yaml` を自動更新。GitOps の原則を維持。
 
 ```bash
 # インフラを手動で立てる/壊す場合
