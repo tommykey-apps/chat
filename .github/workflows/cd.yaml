@@ -28,13 +28,20 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Apply
+      - name: Terraform Plan
         run: |
           cd infra
           terraform init
-          terraform apply -input=false -auto-approve
+          terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd infra
+          terraform apply tfplan
 
   deploy-api:
+    needs: deploy-infra
+    if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,14 +56,35 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker image
+        id: build
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           cd api
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:prod .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:prod
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $ECR_REGISTRY/$ECR_REPOSITORY:prod | cut -d'@' -f2)
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Update kustomization with new digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          cd manifests/base
+          kustomize edit set image chat-api=$ECR_REGISTRY/$ECR_REPOSITORY@$DIGEST
+
+      - name: Commit and push manifest update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifests/base/kustomization.yaml
+          git diff --staged --quiet || git commit -m "build: automatic update of chat"
+          git push
 
   deploy-web:
+    needs: deploy-infra
+    if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
