@@ -62,3 +62,8 @@ output "region" {
   description = "AWS region"
   value       = var.region
 }
+
+output "ses_domain_identity" {
+  description = "SES verified domain"
+  value       = aws_ses_domain_identity.chat.domain
+}

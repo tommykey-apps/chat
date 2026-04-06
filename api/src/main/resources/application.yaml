@@ -45,6 +45,8 @@ app:
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
     client-id: ${COGNITO_CLIENT_ID:}
+  ses:
+    from-address: ${SES_FROM_ADDRESS:noreply@tommykeyapp.com}
   webpush:
     vapid-public-key: ${VAPID_PUBLIC_KEY:}
     vapid-private-key: ${VAPID_PRIVATE_KEY:}

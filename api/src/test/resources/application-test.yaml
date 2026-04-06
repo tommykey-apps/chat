@@ -13,6 +13,7 @@ spring:
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration
+      - io.awspring.cloud.autoconfigure.ses.SesAutoConfiguration
       - io.awspring.cloud.autoconfigure.core.AwsAutoConfiguration
       - io.awspring.cloud.autoconfigure.core.CredentialsProviderAutoConfiguration
       - io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration
@@ -28,6 +29,8 @@ app:
   sqs:
     queue-url: ""
     chat-message-queue: ""
+  ses:
+    from-address: ""
   webpush:
     vapid-public-key: ""
     vapid-private-key: ""
