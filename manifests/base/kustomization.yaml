@@ -13,4 +13,4 @@ images:
   newName: 831963379503.dkr.ecr.ap-northeast-1.amazonaws.com/chat-api
   digest: sha256:598563004e8bad07b36aec5e0badaa4693328ed7351b0d50ed370f04db532875
 - name: 831963379503.dkr.ecr.ap-northeast-1.amazonaws.com/chat-api
-  digest: sha256:598563004e8bad07b36aec5e0badaa4693328ed7351b0d50ed370f04db532875
+  digest: sha256:aa4b09d70f858c5ce5103874ecdbd5342d15f993470483bc9cfb3fdf3fb662d4
