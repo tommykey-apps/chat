@@ -1,5 +1,4 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -44,7 +43,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>chatto</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 </svelte:head>
