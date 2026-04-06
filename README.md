@@ -1,6 +1,6 @@
 # chatto
 
-リアルタイムチャットアプリ。フレンド、DM、リアクション、メンション、既読、タイピングインジケーター、全文検索、画像送信、Web Push 通知を実装。
+リアルタイムチャットアプリ。フレンド、DM、リアクション、メンション、既読、タイピングインジケーター、全文検索、画像送信、Web Push 通知、メール通知を実装。
 
 ## 構成図
 
@@ -17,44 +17,55 @@
 | 認証 | Cognito (JWT, SRP認証) |
 | DB | PostgreSQL (RDS) |
 | キャッシュ | Redis (ElastiCache) |
-| キュー | SQS |
-| 検索 | Elasticsearch (自前ホスト、EKS Pod) |
+| キュー | SQS (通知パイプラインの唯一の経路) |
+| メール | SES (未読メッセージ通知、DKIM + DMARC) |
+| 検索 | Elasticsearch (kuromoji日本語形態素解析、全ルーム横断検索) |
+| 画像処理 | Lambda + sharp (S3アップロード時にサムネイル自動生成) |
 | リアルタイム | WebSocket (STOMP) — CloudFront経由 |
-| 通知 | Web Push (VAPID) + アプリ内トースト + 未読バッジ |
+| 通知 | Web Push (VAPID) + SESメール + アプリ内トースト + 未読バッジ |
+| ファイル配信 | CloudFront signed URL (OAC + Trusted Key Group) |
 | テスト | JUnit 5 + Mockito + Testcontainers / Vitest / Playwright |
 | IaC | Terraform (S3バックエンド + DynamoDB state lock) |
-| CI/CD | GitHub Actions + ArgoCD + Image Updater |
-| 配信 | CloudFront (S3 + ALB を同一ドメインで配信) |
+| CI/CD | GitHub Actions + ArgoCD (CDワークフロー内でdigest更新 + git push) |
+| 配信 | CloudFront (S3 + ALB + uploads を AWS Managed Policy で配信) |
 
 ## 使ってるAWSサービス
 
 | サービス | 何してるか |
 |---------|-----------|
-| EKS | Spring Boot + Elasticsearch の Pod を動かすクラスタ |
+| EKS | Spring Boot + Elasticsearch の Pod を動かすクラスタ (共有インフラ: infra-shared リポジトリで管理) |
 | EC2 | EKSのワーカーノード (t3.medium) |
 | ECR | Docker イメージ置き場 |
 | RDS (PostgreSQL) | チャットルーム、メッセージ、メンバー、ユーザー、フレンドシップ、リアクションの保存 |
-| ElastiCache (Redis) | オンライン状態の管理、未読カウント、既読状態 |
+| ElastiCache (Redis) | オンライン状態の管理、未読カウント、既読状態、メール通知クールダウン |
 | Cognito | ユーザー登録、ログイン、パスワードリセット、JWT 発行 |
-| SQS | メッセージ送信時の通知処理キュー (DLQ付き) |
+| SQS | メッセージ送信時の通知処理キュー (DLQ付き) — 通知パイプラインの唯一の経路 |
+| SES | 未読メッセージが溜まった時のメール通知 (DKIM + DMARC) |
 | S3 | フロントの配信 + チャットで送るファイルの保存 + Terraform state |
-| CloudFront | フロント + REST API + WebSocket の HTTPS 配信 |
+| Lambda | 画像アップロード時のサムネイル自動生成 (S3 Event → sharp でリサイズ) |
+| CloudFront | フロント + REST API + WebSocket + ファイル配信 (signed URL) |
 | ALB | リクエスト振り分け + WebSocket 接続 |
-| Route 53 | カスタムドメイン (chat.tommykeyapp.com) のDNS管理 |
-| ACM | SSL証明書 (*.tommykeyapp.com ワイルドカード) |
-| IAM | Pod に S3/SQS のアクセス権を付与 (IRSA) |
+| Route 53 | カスタムドメイン (chat.tommykeyapp.com) + SES DNS レコード (DKIM, DMARC, MAIL FROM) |
+| ACM | SSL証明書 (*.tommykeyapp.com ワイルドカード、共有インフラで管理) |
+| IAM | Pod に S3/SQS/SES のアクセス権を付与 (IRSA) |
+
+## API ドキュメント
+
+📖 **[Swagger UI](https://tommykey-apps.github.io/chat/)**
 
 ## 機能
 
 ### チャット
 - リアルタイムメッセージ送受信（WebSocket / STOMP）
-- メッセージの編集・削除（送信者のみ）
+- メッセージの編集・削除（送信者のみ、hover時に表示）
 - 絵文字リアクション（👍 ❤️ 😂、トグル式）
 - @メンション（入力サジェスト + ハイライト表示）
 - タイピングインジケーター（「○○が入力中...」）
 - 既読表示
-- メッセージ検索（Elasticsearch 全文検索）
-- 画像・ファイルのアップロード（S3 presigned URL）
+- 全ルーム横断検索（kuromoji日本語形態素解析 + ハイライト）
+- ルーム内メッセージ検索
+- 画像アップロード（サムネイル自動生成 + クリックで原寸表示）
+- ファイルアップロード（S3 presigned URL）
 - 無限スクロール（ページネーション）
 - 日付セパレーター（「今日」「昨日」「3月30日」）
 
@@ -77,11 +88,8 @@
 ### 通知
 - アプリ内トースト通知 + 未読バッジ（STOMP `/user/queue/notifications`）
 - ブラウザ Push 通知（Web Push API + VAPID + Service Worker）
-- SQS による非同期通知パイプライン
-
-## API ドキュメント
-
-ローカル起動後: http://localhost:8080/swagger-ui/index.html
+- SQS による非同期通知パイプライン（フォールバックなし、唯一の経路）
+- SES メール通知（未読5件以上で自動送信、1時間クールダウン）
 
 ## ディレクトリ構成
 
@@ -89,11 +97,14 @@
 chatto/
 ├── api/          # Spring Boot (Java 21)
 ├── web/          # SvelteKit フロント（shadcn-svelte）
-├── infra/        # Terraform（EKS, VPC, RDS, Redis, S3, CloudFront 等）
+├── lambda/       # Lambda関数（サムネイル生成）
+├── infra/        # Terraform（RDS, Redis, S3, SQS, SES, Lambda, CloudFront 等）
 ├── manifests/    # K8s マニフェスト + ArgoCD
 ├── docs/         # 構成図 (draw.io)
 └── .github/      # GitHub Actions（CI/CD）
 ```
+
+> VPC, EKS, ALB Controller, ACM証明書は [infra-shared](https://github.com/tommykey-apps/infra-shared) リポジトリで管理
 
 ## ローカルで動かす
 
@@ -115,17 +126,13 @@ main に push すると自動デプロイ。
 
 ```
 main push → GitHub Actions
-  ├── deploy-api: Docker build → ECR push (:prod)
-  ├── deploy-web: pnpm build → S3 sync → CloudFront invalidate
-  └── deploy-infra: terraform apply (infra/ 変更時のみ)
-
-ECR push 後:
-  Image Updater が prod タグの digest 変更を検知
-  → kustomization.yaml を更新して git commit/push（deploy key）
-  → ArgoCD が auto sync → Pod 更新
+  ├── deploy-infra: terraform plan → apply (infra/ 変更時のみ、Lambda zip ビルド含む)
+  ├── deploy-api: Docker build → ECR push → kustomize edit set image (digest) → git push
+  │     → ArgoCD が auto sync → Pod 更新
+  └── deploy-web: pnpm build → S3 sync → CloudFront invalidate
 ```
 
-Image Updater が git write-back モードで `kustomization.yaml` を自動更新。GitOps の原則を維持。
+CDワークフロー内で kustomization.yaml の digest を直接更新。GitOps の原則を維持。
 
 ```bash
 # インフラを手動で立てる/壊す場合
