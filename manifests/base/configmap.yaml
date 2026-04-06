@@ -16,4 +16,6 @@ data:
   COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
   APP_SQS_CHAT_MESSAGE_QUEUE: chat-messages
   SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+  CLOUDFRONT_DOMAIN: chat.tommykeyapp.com
+  CF_PRIVATE_KEY_PATH: /etc/cf-signing/private-key
   SES_FROM_ADDRESS: noreply@tommykeyapp.com

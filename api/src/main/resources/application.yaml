@@ -45,6 +45,10 @@ app:
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
     client-id: ${COGNITO_CLIENT_ID:}
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:}
+    key-pair-id: ${CF_KEY_PAIR_ID:}
+    private-key-path: ${CF_PRIVATE_KEY_PATH:}
   ses:
     from-address: ${SES_FROM_ADDRESS:noreply@tommykeyapp.com}
   webpush:
