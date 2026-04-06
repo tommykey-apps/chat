@@ -16,6 +16,18 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer" {
+  name = "Managed-AllViewer"
+}
+
 resource "aws_cloudfront_origin_access_control" "frontend" {
   name                              = "${var.project}-frontend-oac"
   origin_access_control_origin_type = "s3"
@@ -63,24 +75,13 @@ resource "aws_cloudfront_distribution" "chat" {
     }
   }
 
-  # Default behavior: S3 frontend
+  # Default behavior: S3 frontend (CachingOptimized: auto compression + 86400s TTL)
   default_cache_behavior {
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "s3-frontend"
     viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = false
-
-      cookies {
-        forward = "none"
-      }
-    }
-
-    min_ttl     = 0
-    default_ttl = 3600
-    max_ttl     = 86400
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
   }
 
   # /uploads/* behavior: S3 uploads, signed URL required
@@ -91,62 +92,29 @@ resource "aws_cloudfront_distribution" "chat" {
     target_origin_id       = "s3-uploads"
     viewer_protocol_policy = "redirect-to-https"
     trusted_key_groups     = [aws_cloudfront_key_group.signing.id]
-
-    forwarded_values {
-      query_string = false
-
-      cookies {
-        forward = "none"
-      }
-    }
-
-    min_ttl     = 0
-    default_ttl = 3600
-    max_ttl     = 86400
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
   }
 
-  # /api/* behavior: ALB, no cache, all methods
+  # /api/* behavior: ALB, no cache, forward all headers
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "alb-api"
-    viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    min_ttl     = 0
-    default_ttl = 0
-    max_ttl     = 0
+    path_pattern             = "/api/*"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    target_origin_id         = "alb-api"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
   }
 
-  # /ws WebSocket: ALB, no cache, forward all headers (Upgrade/Connection)
+  # /ws WebSocket: ALB, no cache, forward all headers
   ordered_cache_behavior {
-    path_pattern           = "/ws"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "alb-api"
-    viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    min_ttl     = 0
-    default_ttl = 0
-    max_ttl     = 0
+    path_pattern             = "/ws"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    target_origin_id         = "alb-api"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
   }
 
   # SPA fallback: 403/404 → /index.html
