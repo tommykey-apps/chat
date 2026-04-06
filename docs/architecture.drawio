@@ -76,9 +76,12 @@
           <mxGeometry x="610" y="140" width="440" height="200" as="geometry" />
         </mxCell>
 
-        <!-- Internet Gateway -->
+        <!-- Internet Gateway (VPCの出入口 = デフォルトゲートウェイ) -->
         <mxCell id="igw" value="Internet&#xa;Gateway" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=11;fillColor=#ED7100;fontColor=#000000;strokeColor=#ED7100;" vertex="1" parent="1">
-          <mxGeometry x="640" y="190" width="60" height="60" as="geometry" />
+          <mxGeometry x="555" y="240" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="igw_note" value="VPC Default&#xa;Gateway" style="text;html=1;fontSize=9;fontStyle=2;align=center;verticalAlign=middle;fillColor=#FFF2CC;strokeColor=#D6B656;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="295" width="80" height="28" as="geometry" />
         </mxCell>
 
         <!-- ALB -->
@@ -190,12 +193,12 @@
           <mxGeometry relative="1" as="geometry"><mxPoint x="0" y="15" as="offset" /></mxGeometry>
         </mxCell>
 
-        <!-- CloudFront to ALB (API) -->
-        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#ED7100;" edge="1" source="cf" target="alb" parent="1">
+        <!-- CloudFront to IGW (API/WS traffic enters VPC) -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#ED7100;" edge="1" source="cf" target="igw" parent="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="270" y="260" />
-              <mxPoint x="870" y="260" />
+              <mxPoint x="270" y="265" />
+              <mxPoint x="580" y="265" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -203,9 +206,14 @@
           <mxGeometry relative="1" as="geometry"><mxPoint x="0" y="15" as="offset" /></mxGeometry>
         </mxCell>
 
-        <!-- IGW to ALB -->
+        <!-- IGW to ALB (traffic flows through VPC gateway to ALB) -->
         <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#ED7100;" edge="1" source="igw" target="alb" parent="1">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="220" />
+              <mxPoint x="840" y="220" />
+            </Array>
+          </mxGeometry>
         </mxCell>
 
         <!-- ALB to EKS Node -->
@@ -310,7 +318,7 @@
         <mxCell id="e_nat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1;strokeColor=#ED7100;dashed=1;" edge="1" source="nat" target="igw" parent="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nat_label" value="Outbound" style="edgeLabel;html=1;fontSize=9;fontStyle=2;" vertex="1" connectable="0" parent="e_nat">
+        <mxCell id="e_nat_label" value="Outbound&#xa;(Private → Internet)" style="edgeLabel;html=1;fontSize=9;fontStyle=2;" vertex="1" connectable="0" parent="e_nat">
           <mxGeometry relative="1" as="geometry"><mxPoint x="0" y="15" as="offset" /></mxGeometry>
         </mxCell>
 
