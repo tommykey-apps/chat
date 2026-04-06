@@ -31,4 +31,11 @@ public class FileController {
         String downloadUrl = fileService.generateDownloadUrl(s3Key);
         return Map.of("downloadUrl", downloadUrl);
     }
+
+    @GetMapping("/presign-download-thumb/**")
+    public Map<String, String> presignDownloadThumb(jakarta.servlet.http.HttpServletRequest request) {
+        String s3Key = request.getRequestURI().replaceFirst("/api/files/presign-download-thumb/", "");
+        String downloadUrl = fileService.generateThumbnailDownloadUrl(s3Key);
+        return Map.of("downloadUrl", downloadUrl);
+    }
 }

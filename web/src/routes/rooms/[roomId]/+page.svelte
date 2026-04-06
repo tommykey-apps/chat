@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, getRoomMembers, editMessage, deleteMessage, addReaction, removeReaction, type Message, type Room, type ReactionGroup } from '$lib/api';
+	import { getMessages, getRoom, getUploadUrl, getDownloadUrl, getThumbnailUrl, leaveRoom, deleteRoom, searchMessages, getReadStatus, getRoomMembers, editMessage, deleteMessage, addReaction, removeReaction, type Message, type Room, type ReactionGroup } from '$lib/api';
 	import { getAuthState } from '$lib/stores/auth.svelte';
 	import { untrack } from 'svelte';
 	import { subscribe, send, getWsState } from '$lib/websocket.svelte';
@@ -19,6 +19,8 @@
 	let searchResults = $state<Message[]>([]);
 	let searching = $state(false);
 	let imageUrls = $state<Record<string, string>>({});
+	let fullImageUrls = $state<Record<string, string>>({});
+	let lightboxUrl = $state<string | null>(null);
 	let currentPage = 0;
 	let totalPages = 1;
 	let loadingMore = $state(false);
@@ -242,11 +244,30 @@
 	async function resolveImageUrl(msg: Message) {
 		if (msg.messageType === 'IMAGE' && !imageUrls[msg.id]) {
 			try {
-				const { downloadUrl } = await getDownloadUrl(msg.content);
+				const { downloadUrl } = await getThumbnailUrl(msg.content);
 				imageUrls = { ...imageUrls, [msg.id]: downloadUrl };
 			} catch {
-				// ignore
+				try {
+					const { downloadUrl } = await getDownloadUrl(msg.content);
+					imageUrls = { ...imageUrls, [msg.id]: downloadUrl };
+				} catch {
+					// ignore
+				}
 			}
+		}
+	}
+
+	async function openLightbox(msg: Message) {
+		if (fullImageUrls[msg.id]) {
+			lightboxUrl = fullImageUrls[msg.id];
+			return;
+		}
+		try {
+			const { downloadUrl } = await getDownloadUrl(msg.content);
+			fullImageUrls = { ...fullImageUrls, [msg.id]: downloadUrl };
+			lightboxUrl = downloadUrl;
+		} catch {
+			// ignore
 		}
 	}
 
@@ -386,7 +407,9 @@
 						<p class="text-xs italic text-muted-foreground">{msg.content}</p>
 					{:else if msg.messageType === 'IMAGE'}
 						{#if imageUrls[msg.id]}
-							<img src={imageUrls[msg.id]} alt="画像" class="max-w-full rounded" loading="lazy" />
+							<button onclick={() => openLightbox(msg)} class="cursor-pointer">
+								<img src={imageUrls[msg.id]} alt="画像" class="max-w-full rounded" loading="lazy" />
+							</button>
 						{:else}
 							<p class="text-sm text-muted-foreground">読み込み中...</p>
 						{/if}
@@ -479,4 +502,13 @@
 			</button>
 		</div>
 	</div>
+
+	{#if lightboxUrl}
+		<button
+			onclick={() => (lightboxUrl = null)}
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+		>
+			<img src={lightboxUrl} alt="原寸画像" class="max-h-[90vh] max-w-[90vw] rounded" />
+		</button>
+	{/if}
 </div>

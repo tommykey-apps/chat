@@ -89,6 +89,9 @@ export const getUploadUrl = (roomId: string, fileName: string, contentType: stri
 export const getDownloadUrl = (s3Key: string) =>
 	request<{ downloadUrl: string }>('GET', `/api/files/presign-download/${s3Key}`);
 
+export const getThumbnailUrl = (s3Key: string) =>
+	request<{ downloadUrl: string }>('GET', `/api/files/presign-download-thumb/${s3Key}`);
+
 // Users
 export interface UserInfo {
 	id: string;

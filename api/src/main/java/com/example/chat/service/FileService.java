@@ -43,6 +43,14 @@ public class FileService {
         return new PresignedUrlResponse(presignedRequest.url().toString(), s3Key);
     }
 
+    public String getThumbnailKey(String s3Key) {
+        return s3Key.replaceAll("(\\.[^.]+)$", "_thumb$1");
+    }
+
+    public String generateThumbnailDownloadUrl(String s3Key) {
+        return generateDownloadUrl(getThumbnailKey(s3Key));
+    }
+
     public String generateDownloadUrl(String s3Key) {
         var getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
