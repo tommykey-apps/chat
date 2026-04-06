@@ -4,10 +4,12 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.time.Instant;
 
 @Document(indexName = "chat-messages")
+@Setting(settingPath = "elasticsearch/settings.json")
 public class ChatMessageDocument {
 
     @Id
@@ -22,7 +24,7 @@ public class ChatMessageDocument {
     @Field(type = FieldType.Text)
     private String senderName;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "kuromoji_analyzer")
     private String content;
 
     @Field(type = FieldType.Keyword)
