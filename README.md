@@ -4,7 +4,7 @@
 
 ## 構成図
 
-![Architecture](docs/architecture.svg)
+![Architecture](docs/architecture.png)
 
 > [docs/architecture.drawio](docs/architecture.drawio) を draw.io で開くと編集できる
 
