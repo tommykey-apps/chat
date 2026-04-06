@@ -105,7 +105,7 @@ jobs:
           git commit -m "build: automatic update of chat"
           git push origin "$BRANCH"
           gh pr create --title "build: automatic update of chat" --body "Automated manifest update by CD pipeline." --base main --head "$BRANCH"
-          gh pr merge "$BRANCH" --auto --delete-branch
+          gh pr merge "$BRANCH" --auto
 
   deploy-web:
     needs: deploy-infra
