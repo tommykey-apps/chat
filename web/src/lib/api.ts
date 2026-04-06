@@ -69,6 +69,20 @@ export const getMessages = (roomId: string, page = 0, size = 50) =>
 export const searchMessages = (roomId: string, query: string, page = 0, size = 50) =>
 	request<PageResponse<Message>>('GET', `/api/rooms/${roomId}/messages/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`);
 
+export interface SearchResult {
+	id: string;
+	roomId: string;
+	senderId: string;
+	senderName: string;
+	content: string;
+	highlightedContent: string;
+	messageType: string;
+	createdAt: string;
+}
+
+export const searchAllMessages = (query: string, page = 0, size = 20) =>
+	request<PageResponse<SearchResult>>('GET', `/api/messages/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`);
+
 export const getUploadUrl = (roomId: string, fileName: string, contentType: string) =>
 	request<{ uploadUrl: string; s3Key: string }>('POST', '/api/files/presign-upload', { roomId, fileName, contentType });
 
