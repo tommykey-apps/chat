@@ -1,6 +1,7 @@
 package com.example.chat.listener;
 
 import com.example.chat.model.dto.ChatNotificationEvent;
+import com.example.chat.service.EmailNotificationService;
 import com.example.chat.service.NotificationService;
 import com.example.chat.service.WebPushService;
 import org.slf4j.Logger;
@@ -17,10 +18,14 @@ public class LocalNotificationListener {
 
     private final NotificationService notificationService;
     private final WebPushService webPushService;
+    private final EmailNotificationService emailNotificationService;
 
-    public LocalNotificationListener(NotificationService notificationService, WebPushService webPushService) {
+    public LocalNotificationListener(NotificationService notificationService,
+                                      WebPushService webPushService,
+                                      EmailNotificationService emailNotificationService) {
         this.notificationService = notificationService;
         this.webPushService = webPushService;
+        this.emailNotificationService = emailNotificationService;
     }
 
     @EventListener
@@ -28,5 +33,6 @@ public class LocalNotificationListener {
         log.info("Local notification event: messageId={}, roomId={}", event.messageId(), event.roomId());
         notificationService.notifyRoomMembers(event);
         webPushService.sendPushToMembers(event);
+        emailNotificationService.sendEmailIfNeeded(event);
     }
 }

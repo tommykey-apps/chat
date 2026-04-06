@@ -17,6 +17,7 @@ spring:
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration
+      - io.awspring.cloud.autoconfigure.ses.SesAutoConfiguration
 
 app:
   s3:
@@ -24,3 +25,5 @@ app:
   sqs:
     queue-url: ""
     chat-message-queue: ""
+  ses:
+    from-address: ""

@@ -2,7 +2,8 @@ package com.example.chat.integration;
 
 import com.example.chat.repository.ChatMessageSearchRepository;
 import com.example.chat.service.SearchService;
-import com.example.chat.service.SqsNotificationService;
+import com.example.chat.service.EmailNotificationService;
+import com.example.chat.service.NotificationSender;
 import com.example.chat.service.WebPushService;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,10 +47,13 @@ public abstract class BaseIntegrationTest {
     protected SearchService searchService;
 
     @MockitoBean
-    protected SqsNotificationService sqsNotificationService;
+    protected NotificationSender notificationSender;
 
     @MockitoBean
     protected WebPushService webPushService;
+
+    @MockitoBean
+    protected EmailNotificationService emailNotificationService;
 
     @MockitoBean
     protected ChatMessageSearchRepository chatMessageSearchRepository;

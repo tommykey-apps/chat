@@ -47,6 +47,7 @@ dependencies {
 
     // AWS
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-ses")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sts")
 

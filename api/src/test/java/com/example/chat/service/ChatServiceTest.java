@@ -31,7 +31,7 @@ class ChatServiceTest {
     private SearchService searchService;
 
     @Mock
-    private SqsNotificationService sqsNotificationService;
+    private NotificationSender notificationSender;
 
     @InjectMocks
     private ChatService chatService;
@@ -85,14 +85,14 @@ class ChatServiceTest {
     }
 
     @Test
-    void saveMessage_callsSqsNotificationServiceSendNotification() {
+    void saveMessage_callsNotificationSenderSendNotification() {
         UUID roomId = UUID.randomUUID();
         ChatMessage savedMsg = buildSavedMessage(roomId);
         when(chatMessageRepository.save(any(ChatMessage.class))).thenReturn(savedMsg);
 
         chatService.saveMessage(roomId, "user-1", "Alice", "Hello!", "TEXT");
 
-        verify(sqsNotificationService).sendNotification(savedMsg);
+        verify(notificationSender).sendNotification(savedMsg);
     }
 
     @Test
@@ -109,11 +109,11 @@ class ChatServiceTest {
     }
 
     @Test
-    void saveMessage_whenSqsNotificationServiceThrows_messageIsStillSavedAndReturned() {
+    void saveMessage_whenNotificationSenderThrows_messageIsStillSavedAndReturned() {
         UUID roomId = UUID.randomUUID();
         ChatMessage savedMsg = buildSavedMessage(roomId);
         when(chatMessageRepository.save(any(ChatMessage.class))).thenReturn(savedMsg);
-        doThrow(new RuntimeException("SQS is down")).when(sqsNotificationService).sendNotification(any());
+        doThrow(new RuntimeException("SQS is down")).when(notificationSender).sendNotification(any());
 
         ChatMessage result = chatService.saveMessage(roomId, "user-1", "Alice", "Hello!", "TEXT");
 

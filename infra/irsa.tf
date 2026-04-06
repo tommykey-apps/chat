@@ -30,7 +30,7 @@ module "irsa_chat_api" {
 
 resource "aws_iam_policy" "chat_api_access" {
   name        = "${var.project}-api-access"
-  description = "Policy for chat API to access S3 and SQS"
+  description = "Policy for chat API to access S3, SQS, and SES"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -56,6 +56,15 @@ resource "aws_iam_policy" "chat_api_access" {
           "sqs:CreateQueue",
         ]
         Resource = aws_sqs_queue.chat_messages.arn
+      },
+      {
+        Sid    = "SESAccess"
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+        ]
+        Resource = "arn:aws:ses:${var.region}:${data.aws_caller_identity.current.account_id}:identity/tommykeyapp.com"
       },
     ]
   })
