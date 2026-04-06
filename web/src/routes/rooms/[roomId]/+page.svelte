@@ -427,7 +427,7 @@
 						{/if}
 					{/if}
 					{#if isOwnMessage(msg) && msg.messageType === 'TEXT' && editingId !== msg.id}
-						<div class="mt-1 flex gap-2">
+						<div class="mt-1 flex gap-2 opacity-0 transition group-hover:opacity-100">
 							<button onclick={() => handleEdit(msg)} class="text-[10px] text-muted-foreground/40 hover:text-muted-foreground">編集</button>
 							<button onclick={() => handleDeleteMessage(msg.id)} class="text-[10px] text-muted-foreground/40 hover:text-red-400">削除</button>
 						</div>

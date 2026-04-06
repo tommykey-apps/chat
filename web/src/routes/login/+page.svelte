@@ -153,6 +153,9 @@
 						required
 						minlength={8}
 					/>
+					{#if mode === 'signup'}
+						<p class="text-xs text-muted-foreground">8文字以上、大文字・小文字・数字を含む</p>
+					{/if}
 					<Button type="submit" disabled={loading} class="w-full">
 						{loading ? '処理中...' : mode === 'login' ? 'ログイン' : 'サインアップ'}
 					</Button>
