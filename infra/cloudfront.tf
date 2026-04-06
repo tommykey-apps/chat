@@ -23,6 +23,13 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
   signing_protocol                  = "sigv4"
 }
 
+resource "aws_cloudfront_origin_access_control" "uploads" {
+  name                              = "${var.project}-uploads-oac"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
 resource "aws_cloudfront_distribution" "chat" {
   enabled             = true
   default_root_object = "index.html"
@@ -34,6 +41,13 @@ resource "aws_cloudfront_distribution" "chat" {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "s3-frontend"
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+  }
+
+  # S3 origin for uploads (signed URL)
+  origin {
+    domain_name              = aws_s3_bucket.chat_uploads.bucket_regional_domain_name
+    origin_id                = "s3-uploads"
+    origin_access_control_id = aws_cloudfront_origin_access_control.uploads.id
   }
 
   # ALB origin for API
@@ -55,6 +69,28 @@ resource "aws_cloudfront_distribution" "chat" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "s3-frontend"
     viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 3600
+    max_ttl     = 86400
+  }
+
+  # /uploads/* behavior: S3 uploads, signed URL required
+  ordered_cache_behavior {
+    path_pattern           = "/uploads/*"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "s3-uploads"
+    viewer_protocol_policy = "redirect-to-https"
+    trusted_key_groups     = [aws_cloudfront_key_group.signing.id]
 
     forwarded_values {
       query_string = false

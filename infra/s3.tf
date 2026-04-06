@@ -31,6 +31,30 @@ resource "aws_s3_bucket_lifecycle_configuration" "chat_uploads" {
   }
 }
 
+resource "aws_s3_bucket_policy" "chat_uploads" {
+  bucket = aws_s3_bucket.chat_uploads.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowCloudFrontOAC"
+        Effect    = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.chat_uploads.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.chat.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_s3_bucket_cors_configuration" "chat_uploads" {
   bucket = aws_s3_bucket.chat_uploads.id
 

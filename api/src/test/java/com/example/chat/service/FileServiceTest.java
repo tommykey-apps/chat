@@ -37,7 +37,7 @@ class FileServiceTest {
     private FileService fileService;
 
     private FileService createFileService() {
-        return new FileService(s3Presigner, bucketName);
+        return new FileService(s3Presigner, bucketName, "", "", "");
     }
 
     @Test

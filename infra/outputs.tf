@@ -63,6 +63,11 @@ output "region" {
   value       = var.region
 }
 
+output "cf_key_pair_id" {
+  description = "CloudFront signing key pair ID"
+  value       = aws_cloudfront_public_key.signing.id
+}
+
 output "ses_domain_identity" {
   description = "SES verified domain"
   value       = aws_ses_domain_identity.chat.domain
