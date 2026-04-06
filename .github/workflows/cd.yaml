@@ -9,6 +9,9 @@ on:
       - "infra/**"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: chat-api
