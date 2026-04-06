@@ -100,7 +100,7 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          BRANCH="auto/update-manifest-$(git rev-parse --short HEAD)"
+          BRANCH="auto/update-manifest-$(date +%Y%m%d%H%M%S)"
           git checkout -b "$BRANCH"
           git commit -m "build: automatic update of chat"
           git push origin "$BRANCH"
