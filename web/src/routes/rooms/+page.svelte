@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { listRooms, createRoom, joinRoom, type Room } from '$lib/api';
+	import { listRooms, createRoom, joinRoom, searchAllMessages, type Room, type SearchResult } from '$lib/api';
 	import { getAuthState, logout } from '$lib/stores/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -17,6 +17,28 @@
 	let newDesc = $state('');
 	let loading = $state(false);
 	let error = $state('');
+	let showSearch = $state(false);
+	let searchQuery = $state('');
+	let searchResults = $state<SearchResult[]>([]);
+	let searching = $state(false);
+
+	async function handleSearch() {
+		if (!searchQuery.trim()) return;
+		searching = true;
+		try {
+			const res = await searchAllMessages(searchQuery);
+			searchResults = res.content;
+		} catch {
+			searchResults = [];
+		} finally {
+			searching = false;
+		}
+	}
+
+	function getRoomName(roomId: string): string {
+		const room = rooms.find(r => r.id === roomId);
+		return room ? room.name : 'Unknown';
+	}
 
 	async function loadRooms() {
 		try {
@@ -56,6 +78,7 @@
 			<a href="/profile" class="text-xs text-muted-foreground hover:text-foreground sm:text-sm">設定</a>
 		</div>
 		<div class="flex items-center gap-1 sm:gap-2">
+			<Button size="sm" variant="ghost" onclick={() => { showSearch = !showSearch; if (!showSearch) { searchQuery = ''; searchResults = []; } }}>検索</Button>
 			<Button size="sm" onclick={() => (showCreate = !showCreate)}>+</Button>
 			<button
 				onclick={() => { logout(); goto('/login'); }}
@@ -65,6 +88,35 @@
 			</button>
 		</div>
 	</header>
+
+	{#if showSearch}
+		<div class="mx-auto w-full max-w-2xl px-4 pt-4 sm:px-6">
+			<form onsubmit={(e) => { e.preventDefault(); handleSearch(); }} class="flex gap-2">
+				<Input bind:value={searchQuery} placeholder="全ルーム横断検索..." class="flex-1" />
+				<Button type="submit" disabled={searching}>{searching ? '検索中...' : '検索'}</Button>
+			</form>
+			{#if searchResults.length > 0}
+				<div class="mt-3 flex flex-col gap-2">
+					{#each searchResults as result (result.id)}
+						<a href="/rooms/{result.roomId}" class="block">
+							<Card.Root class="py-2 gap-1 transition hover:border-primary/30 hover:bg-card/80">
+								<Card.Content>
+									<div class="flex items-center gap-2 text-xs text-muted-foreground">
+										<span class="text-primary font-medium">#{getRoomName(result.roomId)}</span>
+										<span>{result.senderName}</span>
+										<span>{new Date(result.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+									</div>
+									<p class="mt-1 text-sm">{@html result.highlightedContent}</p>
+								</Card.Content>
+							</Card.Root>
+						</a>
+					{/each}
+				</div>
+			{:else if searchQuery && !searching}
+				<p class="mt-3 text-center text-sm text-muted-foreground">結果なし</p>
+			{/if}
+		</div>
+	{/if}
 
 	<main class="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6">
 		<Dialog.Root bind:open={showCreate}>
