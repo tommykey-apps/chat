@@ -6,10 +6,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.0"
-    }
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.0"
@@ -30,16 +26,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
-provider "helm" {
-  kubernetes {
-    host                   = data.aws_eks_cluster.existing.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.existing.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.existing.token
-  }
-}
-
 provider "kubernetes" {
-  host                   = data.aws_eks_cluster.existing.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.existing.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.existing.token
+  host                   = yamldecode(data.aws_ssm_parameter.k3s_kubeconfig.value).clusters[0].cluster.server
+  cluster_ca_certificate = base64decode(yamldecode(data.aws_ssm_parameter.k3s_kubeconfig.value).clusters[0].cluster.certificate-authority-data)
+  client_certificate     = base64decode(yamldecode(data.aws_ssm_parameter.k3s_kubeconfig.value).users[0].user.client-certificate-data)
+  client_key             = base64decode(yamldecode(data.aws_ssm_parameter.k3s_kubeconfig.value).users[0].user.client-key-data)
 }

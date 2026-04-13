@@ -27,30 +27,21 @@ data "aws_subnets" "public" {
   }
 }
 
-data "aws_eks_cluster" "existing" {
-  name = var.eks_cluster_name
-}
-
-data "aws_eks_cluster_auth" "existing" {
-  name = var.eks_cluster_name
-}
-
 data "aws_caller_identity" "current" {}
 
-data "aws_lb" "chat" {
-  tags = {
-    "ingress.k8s.aws/stack" = "chat/chat-api"
+data "aws_instance" "k3s" {
+  filter {
+    name   = "tag:Name"
+    values = ["shared-k3s"]
+  }
+
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
   }
 }
 
-data "aws_security_groups" "eks_nodes" {
-  filter {
-    name   = "tag:kubernetes.io/cluster/${var.eks_cluster_name}"
-    values = ["owned"]
-  }
-
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.existing.id]
-  }
+data "aws_ssm_parameter" "k3s_kubeconfig" {
+  name            = "/shared/k3s/kubeconfig"
+  with_decryption = true
 }

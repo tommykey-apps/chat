@@ -1,8 +1,5 @@
 locals {
-  eks_security_group_ids = distinct(concat(
-    [data.aws_eks_cluster.existing.vpc_config[0].cluster_security_group_id],
-    data.aws_security_groups.eks_nodes.ids,
-  ))
+  k3s_security_group_ids = data.aws_instance.k3s.vpc_security_group_ids
 }
 
 resource "aws_security_group" "rds" {
@@ -11,11 +8,11 @@ resource "aws_security_group" "rds" {
   vpc_id      = data.aws_vpc.existing.id
 
   ingress {
-    description     = "PostgreSQL from EKS nodes"
+    description     = "PostgreSQL from K3s"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = local.eks_security_group_ids
+    security_groups = tolist(local.k3s_security_group_ids)
   }
 
   egress {
@@ -37,11 +34,11 @@ resource "aws_security_group" "redis" {
   vpc_id      = data.aws_vpc.existing.id
 
   ingress {
-    description     = "Redis from EKS nodes"
+    description     = "Redis from K3s"
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = local.eks_security_group_ids
+    security_groups = tolist(local.k3s_security_group_ids)
   }
 
   egress {
