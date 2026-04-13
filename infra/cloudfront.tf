@@ -62,10 +62,10 @@ resource "aws_cloudfront_distribution" "chat" {
     origin_access_control_id = aws_cloudfront_origin_access_control.uploads.id
   }
 
-  # ALB origin for API
+  # K3s Traefik origin for API
   origin {
-    domain_name = data.aws_lb.chat.dns_name
-    origin_id   = "alb-api"
+    domain_name = aws_route53_record.api_origin.fqdn
+    origin_id   = "k3s-api"
 
     custom_origin_config {
       http_port              = 80
@@ -100,7 +100,7 @@ resource "aws_cloudfront_distribution" "chat" {
     path_pattern             = "/api/*"
     allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods           = ["GET", "HEAD"]
-    target_origin_id         = "alb-api"
+    target_origin_id         = "k3s-api"
     viewer_protocol_policy   = "redirect-to-https"
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
@@ -111,7 +111,7 @@ resource "aws_cloudfront_distribution" "chat" {
     path_pattern             = "/ws"
     allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods           = ["GET", "HEAD"]
-    target_origin_id         = "alb-api"
+    target_origin_id         = "k3s-api"
     viewer_protocol_policy   = "redirect-to-https"
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id

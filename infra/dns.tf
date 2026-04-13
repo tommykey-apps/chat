@@ -9,6 +9,15 @@ data "aws_acm_certificate" "wildcard" {
   statuses = ["ISSUED"]
 }
 
+# api-origin.tommykeyapp.com -> K3s EIP (CloudFront origin)
+resource "aws_route53_record" "api_origin" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "api-origin.tommykeyapp.com"
+  type    = "A"
+  ttl     = 300
+  records = [data.aws_instance.k3s.public_ip]
+}
+
 # chat.tommykeyapp.com -> CloudFront
 resource "aws_route53_record" "chat" {
   zone_id = data.aws_route53_zone.main.zone_id

@@ -10,18 +10,17 @@ variable "project" {
   default     = "chat"
 }
 
-variable "eks_cluster_name" {
-  description = "Name of the existing EKS cluster"
-  type        = string
-  default     = "url-shortener-cluster"
-}
-
 variable "vpc_name" {
   description = "Name of the existing VPC"
   type        = string
-  default     = "url-shortener-vpc"
+  default     = "shared-vpc"
 }
 
+variable "k3s_iam_role_name" {
+  description = "IAM role name of the K3s instance profile"
+  type        = string
+  default     = "shared-k3s"
+}
 
 variable "db_username" {
   description = "Database master username"

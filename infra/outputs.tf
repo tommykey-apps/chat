@@ -53,9 +53,9 @@ output "frontend_bucket_name" {
   value       = aws_s3_bucket.frontend.bucket
 }
 
-output "api_role_arn" {
-  description = "IAM role ARN for chat API (IRSA)"
-  value       = module.irsa_chat_api.iam_role_arn
+output "k3s_iam_role_name" {
+  description = "K3s IAM role name with chat API access"
+  value       = var.k3s_iam_role_name
 }
 
 output "region" {
