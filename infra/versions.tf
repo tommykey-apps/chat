@@ -14,6 +14,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
   }
 }
 
@@ -24,6 +28,11 @@ provider "aws" {
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
+}
+
+provider "github" {
+  owner = "tommykey-apps"
+  token = var.github_token
 }
 
 provider "kubernetes" {
