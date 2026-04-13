@@ -26,15 +26,15 @@
 | ファイル配信 | CloudFront signed URL (OAC + Trusted Key Group) |
 | テスト | JUnit 5 + Mockito + Testcontainers / Vitest / Playwright |
 | IaC | Terraform (S3バックエンド + DynamoDB state lock) |
-| CI/CD | GitHub Actions + ArgoCD (CDワークフロー内でdigest更新 + git push) |
-| 配信 | CloudFront (S3 + ALB + uploads を AWS Managed Policy で配信) |
+| CI/CD | GitHub Actions + ArgoCD (CDワークフロー内でdigest更新 + PR自動作成) |
+| 配信 | CloudFront (S3 + K3s Traefik + uploads を AWS Managed Policy で配信) |
+| コンテナ | K3s on EC2 (EKSからコスト最適化のため移行) |
 
 ## 使ってるAWSサービス
 
 | サービス | 何してるか |
 |---------|-----------|
-| EKS | Spring Boot + Elasticsearch の Pod を動かすクラスタ (共有インフラ: infra-shared リポジトリで管理) |
-| EC2 | EKSのワーカーノード (t3.medium) |
+| EC2 | K3s サーバー (t3.medium) — Spring Boot + Elasticsearch + ArgoCD + Traefik を動かす |
 | ECR | Docker イメージ置き場 |
 | RDS (PostgreSQL) | チャットルーム、メッセージ、メンバー、ユーザー、フレンドシップ、リアクションの保存 |
 | ElastiCache (Redis) | オンライン状態の管理、未読カウント、既読状態、メール通知クールダウン |
@@ -44,10 +44,9 @@
 | S3 | フロントの配信 + チャットで送るファイルの保存 + Terraform state |
 | Lambda | 画像アップロード時のサムネイル自動生成 (S3 Event → sharp でリサイズ) |
 | CloudFront | フロント + REST API + WebSocket + ファイル配信 (signed URL) |
-| ALB | リクエスト振り分け + WebSocket 接続 |
 | Route 53 | カスタムドメイン (chat.tommykeyapp.com) + SES DNS レコード (DKIM, DMARC, MAIL FROM) |
-| ACM | SSL証明書 (*.tommykeyapp.com ワイルドカード、共有インフラで管理) |
-| IAM | Pod に S3/SQS/SES のアクセス権を付与 (IRSA) |
+| ACM | SSL証明書 (*.tommykeyapp.com ワイルドカード、infra-global で管理) |
+| IAM | EC2 Instance Profile で Pod に S3/SQS/SES のアクセス権を付与 |
 
 ## API ドキュメント
 
@@ -104,7 +103,8 @@ chatto/
 └── .github/      # GitHub Actions（CI/CD）
 ```
 
-> VPC, EKS, ALB Controller, ACM証明書は [infra-shared](https://github.com/tommykey-apps/infra-shared) リポジトリで管理
+> VPC, K3s EC2 は [infra-shared](https://github.com/tommykey-apps/infra-shared) リポジトリで管理
+> ACM証明書, Route 53ホストゾーンは [infra-global](https://github.com/tommykey-apps/infra-global) リポジトリで管理
 
 ## ローカルで動かす
 
@@ -127,12 +127,12 @@ main に push すると自動デプロイ。
 ```
 main push → GitHub Actions
   ├── deploy-infra: terraform plan → apply (infra/ 変更時のみ、Lambda zip ビルド含む)
-  ├── deploy-api: Docker build → ECR push → kustomize edit set image (digest) → git push
-  │     → ArgoCD が auto sync → Pod 更新
+  ├── deploy-api: Docker build → ECR push → kustomize edit set image (digest)
+  │     → GitHub App で PR 自動作成 → merge queue → ArgoCD が auto sync → Pod 更新
   └── deploy-web: pnpm build → S3 sync → CloudFront invalidate
 ```
 
-CDワークフロー内で kustomization.yaml の digest を直接更新。GitOps の原則を維持。
+GitOps の原則を維持。CDワークフロー内で kustomization.yaml の digest を更新し、PR経由でmainにマージ。
 
 ```bash
 # インフラを手動で立てる/壊す場合
@@ -158,4 +158,4 @@ cd web && pnpm test:e2e            # E2E テスト (Playwright)
 ## WebSocket について
 
 CloudFront 経由で WebSocket (STOMP) を通している。
-`/ws` パスを ALB オリジンに振り分け、`Upgrade` / `Connection` ヘッダーを転送する設定。
+`/ws` パスを K3s Traefik オリジンに振り分け、`Upgrade` / `Connection` ヘッダーを転送する設定。

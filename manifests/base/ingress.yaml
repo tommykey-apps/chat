@@ -3,12 +3,8 @@ kind: Ingress
 metadata:
   name: chat-api
   namespace: chat
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=false
 spec:
+  ingressClassName: traefik
   rules:
     - http:
         paths:
