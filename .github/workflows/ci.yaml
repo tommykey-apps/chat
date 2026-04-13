@@ -62,4 +62,7 @@ jobs:
         run: cd web && pnpm exec playwright install --with-deps chromium
 
       - name: Build and run E2E tests
+        env:
+          VITE_COGNITO_USER_POOL_ID: ap-northeast-1_qPedGpbby
+          VITE_COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
         run: cd web && pnpm build && pnpm test:e2e
