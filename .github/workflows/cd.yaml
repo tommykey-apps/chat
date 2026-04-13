@@ -142,8 +142,14 @@ jobs:
           VITE_COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
         run: cd web && pnpm install --frozen-lockfile && pnpm build
 
+      - name: Get deployment parameters from SSM
+        id: params
+        run: |
+          echo "cloudfront_id=$(aws ssm get-parameter --name /chat/cloudfront-distribution-id --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "frontend_bucket=$(aws ssm get-parameter --name /chat/frontend-bucket --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+
       - name: Deploy to S3
-        run: aws s3 sync web/build/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
+        run: aws s3 sync web/build/ s3://${{ steps.params.outputs.frontend_bucket }} --delete
 
       - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id ${{ steps.params.outputs.cloudfront_id }} --paths "/*"
