@@ -17,3 +17,23 @@ resource "aws_ssm_parameter" "frontend_bucket" {
     Project = var.project
   }
 }
+
+resource "aws_ssm_parameter" "cognito_user_pool_id" {
+  name  = "/chat/cognito-user-pool-id"
+  type  = "String"
+  value = aws_cognito_user_pool.chat.id
+
+  tags = {
+    Project = var.project
+  }
+}
+
+resource "aws_ssm_parameter" "cognito_client_id" {
+  name  = "/chat/cognito-client-id"
+  type  = "String"
+  value = aws_cognito_user_pool_client.chat_web.id
+
+  tags = {
+    Project = var.project
+  }
+}

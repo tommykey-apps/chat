@@ -140,17 +140,19 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
 
-      - name: Build web
-        env:
-          VITE_COGNITO_USER_POOL_ID: ap-northeast-1_qPedGpbby
-          VITE_COGNITO_CLIENT_ID: 7vsovq6esg1am78jmk3diucc3q
-        run: cd web && pnpm install --frozen-lockfile && pnpm build
-
       - name: Get deployment parameters from SSM
         id: params
         run: |
           echo "cloudfront_id=$(aws ssm get-parameter --name /chat/cloudfront-distribution-id --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
           echo "frontend_bucket=$(aws ssm get-parameter --name /chat/frontend-bucket --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "cognito_user_pool_id=$(aws ssm get-parameter --name /chat/cognito-user-pool-id --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "cognito_client_id=$(aws ssm get-parameter --name /chat/cognito-client-id --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+
+      - name: Build web
+        env:
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.params.outputs.cognito_user_pool_id }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.params.outputs.cognito_client_id }}
+        run: cd web && pnpm install --frozen-lockfile && pnpm build
 
       - name: Deploy to S3
         run: aws s3 sync web/build/ s3://${{ steps.params.outputs.frontend_bucket }} --delete
