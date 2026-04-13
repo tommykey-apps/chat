@@ -43,12 +43,16 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Plan
+        env:
+          TF_VAR_github_token: ${{ secrets.GH_PAT }}
         run: |
           cd infra
           terraform init
           terraform plan -input=false -out=tfplan
 
       - name: Terraform Apply
+        env:
+          TF_VAR_github_token: ${{ secrets.GH_PAT }}
         run: |
           cd infra
           terraform apply tfplan

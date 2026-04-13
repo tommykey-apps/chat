@@ -22,6 +22,12 @@ variable "k3s_iam_role_name" {
   default     = "shared-k3s"
 }
 
+variable "github_token" {
+  description = "GitHub token for deploy key management"
+  type        = string
+  sensitive   = true
+}
+
 variable "db_username" {
   description = "Database master username"
   type        = string
