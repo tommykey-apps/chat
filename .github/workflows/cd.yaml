@@ -18,9 +18,24 @@ env:
   ECR_REPOSITORY: chat-api
 
 jobs:
-  deploy-infra:
+  detect-changes:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'infra/') || github.event_name == 'workflow_dispatch'
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infra/**'
+              - 'lambda/**'
+
+  deploy-infra:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.infra == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +73,7 @@ jobs:
           terraform apply tfplan
 
   deploy-api:
-    needs: deploy-infra
+    needs: [detect-changes, deploy-infra]
     if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
@@ -118,7 +133,7 @@ jobs:
           gh pr merge "$BRANCH" --auto
 
   deploy-web:
-    needs: deploy-infra
+    needs: [detect-changes, deploy-infra]
     if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
