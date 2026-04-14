@@ -63,6 +63,6 @@ jobs:
 
       - name: Build and run E2E tests
         env:
-          VITE_COGNITO_USER_POOL_ID: dummy
-          VITE_COGNITO_CLIENT_ID: dummy
+          VITE_COGNITO_USER_POOL_ID: ap-northeast-1_DummyPool
+          VITE_COGNITO_CLIENT_ID: dummyclientid0000000000000
         run: cd web && pnpm build && pnpm test:e2e
