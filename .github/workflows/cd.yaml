@@ -55,11 +55,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: lambda/thumbnail/pnpm-lock.yaml
 
-      - name: Build Lambda thumbnail
+      - name: Install Lambda thumbnail deps
         run: |
           cd lambda/thumbnail
           pnpm install --frozen-lockfile --prod
-          zip -r ../../infra/lambda-thumbnail.zip .
 
       - uses: hashicorp/setup-terraform@v3
 
