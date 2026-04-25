@@ -49,15 +49,23 @@ resource "aws_iam_role_policy" "thumbnail_lambda" {
   })
 }
 
+data "archive_file" "thumbnail" {
+  type             = "zip"
+  source_dir       = "${path.module}/../lambda/thumbnail"
+  output_path      = "${path.module}/lambda-thumbnail.zip"
+  output_file_mode = "0644"
+}
+
 resource "aws_lambda_function" "thumbnail" {
-  filename         = "${path.module}/lambda-thumbnail.zip"
+  filename         = data.archive_file.thumbnail.output_path
   function_name    = "${var.project}-thumbnail"
   role             = aws_iam_role.thumbnail_lambda.arn
   handler          = "index.handler"
   runtime          = "nodejs22.x"
+  architectures    = ["x86_64"]
   timeout          = 30
   memory_size      = 512
-  source_code_hash = filebase64sha256("${path.module}/lambda-thumbnail.zip")
+  source_code_hash = data.archive_file.thumbnail.output_base64sha256
 
   tags = {
     Project = var.project

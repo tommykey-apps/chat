@@ -11,6 +11,7 @@ infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.backup
 infra/*.tfvars
+infra/lambda-thumbnail.zip
 
 # Web (SvelteKit)
 web/node_modules/
