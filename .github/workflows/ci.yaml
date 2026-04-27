@@ -80,21 +80,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
 
+      - name: Check shared infra exists
+        id: shared
+        run: |
+          VPC=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=shared-vpc \
+                  --query 'Vpcs[0].VpcId' --output text 2>/dev/null || true)
+          if [ -n "$VPC" ] && [ "$VPC" != "None" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::shared-vpc not found, skipping terraform plan (chat の data source は infra-shared に依存しているため)"
+          fi
+
       - uses: pnpm/action-setup@v4
+        if: steps.shared.outputs.exists == 'true'
         with:
           version: 10
 
       - uses: actions/setup-node@v4
+        if: steps.shared.outputs.exists == 'true'
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: lambda/thumbnail/pnpm-lock.yaml
 
       - name: Install Lambda thumbnail deps
+        if: steps.shared.outputs.exists == 'true'
         run: |
           cd lambda/thumbnail
           pnpm install --frozen-lockfile --prod
 
       - uses: tommykey-apps/.github/.github/actions/terraform-plan@v1
+        if: steps.shared.outputs.exists == 'true'
         with:
           working-directory: infra
