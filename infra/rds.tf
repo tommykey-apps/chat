@@ -23,6 +23,7 @@ resource "aws_db_instance" "chat" {
 
   skip_final_snapshot = true
   multi_az            = false
+  apply_immediately   = true
 
   tags = {
     Project = var.project
