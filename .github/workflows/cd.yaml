@@ -32,10 +32,35 @@ jobs:
               - 'infra/**'
               - 'lambda/**'
 
-  deploy-infra:
-    needs: detect-changes
+  detect-shared:
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.infra == 'true' || github.event_name == 'workflow_dispatch'
+    outputs:
+      exists: ${{ steps.shared.outputs.exists }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check shared infra exists
+        id: shared
+        run: |
+          VPC=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=shared-vpc \
+                  --query 'Vpcs[0].VpcId' --output text 2>/dev/null || true)
+          if [ -n "$VPC" ] && [ "$VPC" != "None" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::shared-vpc not found, deploy ジョブを全 skip します (chat AWS infra は dormant 状態)"
+          fi
+
+  deploy-infra:
+    needs: [detect-changes, detect-shared]
+    runs-on: ubuntu-latest
+    if: |
+      (needs.detect-changes.outputs.infra == 'true' || github.event_name == 'workflow_dispatch')
+      && needs.detect-shared.outputs.exists == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -80,8 +105,11 @@ jobs:
           terraform apply tfplan
 
   deploy-api:
-    needs: [detect-changes, deploy-infra]
-    if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
+    needs: [detect-changes, detect-shared, deploy-infra]
+    if: |
+      always()
+      && needs.detect-shared.outputs.exists == 'true'
+      && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -140,8 +168,11 @@ jobs:
           gh pr merge "$BRANCH" --auto
 
   deploy-web:
-    needs: [detect-changes, deploy-infra]
-    if: always() && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
+    needs: [detect-changes, detect-shared, deploy-infra]
+    if: |
+      always()
+      && needs.detect-shared.outputs.exists == 'true'
+      && (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
